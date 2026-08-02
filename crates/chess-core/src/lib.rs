@@ -19,3 +19,8 @@ pub use mv::{Move, MoveFlag, Promotion};
 pub use piece::{Piece, PieceKind};
 pub use position::Position;
 pub use square::Square;
+
+#[cfg(feature = "all")]
+pub use fen::{fen2position, position2fen};
+#[cfg(feature = "all")]
+pub use zobrist::ZobristKeys;

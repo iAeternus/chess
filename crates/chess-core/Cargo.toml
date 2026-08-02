@@ -7,3 +7,7 @@ edition = "2024"
 bitflags = "2.13.1"
 rand = "0.10.2"
 thiserror = "2.0.19"
+
+[features]
+default = []
+all = []
