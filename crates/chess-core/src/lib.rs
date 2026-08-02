@@ -1,3 +1,4 @@
+mod attack;
 mod bitboard;
 mod board;
 mod castling;

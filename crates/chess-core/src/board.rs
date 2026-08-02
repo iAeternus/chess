@@ -41,7 +41,7 @@ impl Board {
         debug_assert!(
             self.by_square[sq.index()].is_none(),
             "square already occupied"
-        ); // TODO: 错误处理
+        );
         self.pieces[piece.color as usize][piece.kind as usize].set(sq);
         self.by_square[sq.index()] = Some(piece);
     }
@@ -56,7 +56,7 @@ impl Board {
 
     /// 移动棋子，不检查移动合法性，返回棋子
     pub fn move_piece(&mut self, from: Square, to: Square) -> Option<Piece> {
-        debug_assert!(self.piece_at(to).is_none(), "destination occupied"); // TODO: 错误处理
+        debug_assert!(self.piece_at(to).is_none(), "destination occupied");
         let piece = self.remove_piece(from)?;
         self.add_piece(to, piece);
         Some(piece)
