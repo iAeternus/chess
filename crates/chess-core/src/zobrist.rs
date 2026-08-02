@@ -9,11 +9,7 @@ use crate::{CastlingRights, Color, Piece, PieceKind, Position, Square};
 /// 国际象棋局面 Hash 由以下部分异或得到:
 ///
 /// ```text
-/// hash =
-///     piece
-///     XOR side_to_move
-///     XOR castling
-///     XOR en_passant
+/// hash = piece XOR side_to_move XOR castling XOR en_passant
 /// ```
 ///
 /// halfmove_clock、fullmove_number 不参与 Zobrist Hash
