@@ -25,4 +25,4 @@ pub use square::Square;
 #[cfg(feature = "all")]
 pub use fen::{fen2position, position2fen};
 #[cfg(feature = "all")]
-pub use zobrist::ZobristKeys;
+pub use zobrist::Zobrist;
