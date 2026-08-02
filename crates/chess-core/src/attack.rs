@@ -35,12 +35,12 @@ pub static PAWN_ATTACKS: LazyLock<[[BitBoard; 64]; 2]> = LazyLock::new(|| {
 
 /// 象攻击表，对角线4个方向
 pub fn bishop_rays(sq: Square, occupied: BitBoard) -> BitBoard {
-    todo!()
+    sliding_attack(sq, occupied, &[(1, 1), (-1, 1), (1, -1), (-1, -1)])
 }
 
 /// 车攻击表，上下左右4个方向
 pub fn rook_rays(sq: Square, occupied: BitBoard) -> BitBoard {
-    todo!()
+    sliding_attack(sq, occupied, &[(0, 1), (0, -1), (1, 0), (-1, 0)])
 }
 
 /// 后攻击表，对角线+上下左右8个方向
@@ -55,11 +55,11 @@ pub fn queen_rays(sq: Square, occupied: BitBoard) -> BitBoard {
 /// - true: 是
 /// - false: 否
 pub fn is_square_attacked(board: &Board, sq: Square, by_color: Color) -> bool {
-    let color = by_color as usize;
     let sq_idx = sq.index();
 
     // 是否被pawn攻击
-    let pawn_src = PAWN_ATTACKS[!color][sq_idx] & board.piece_kind(by_color, PieceKind::Pawn);
+    let pawn_src = PAWN_ATTACKS[by_color.flip() as usize][sq_idx]
+        & board.piece_kind(by_color, PieceKind::Pawn);
     if !pawn_src.is_empty() {
         return true;
     }
@@ -196,4 +196,153 @@ fn sliding_attack(sq: Square, occupied: BitBoard, directions: &[(i8, i8)]) -> Bi
     }
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Board, Piece};
+
+    #[test]
+    fn test_knight_center_attack() {
+        // 马e4，攻击: c3 c5 d2 d6 f2 f6 g3 g5
+        let attacks = KNIGHT_ATTACKS[Square::E4.index()];
+        let expected = [
+            Square::C3,
+            Square::C5,
+            Square::D2,
+            Square::D6,
+            Square::F2,
+            Square::F6,
+            Square::G3,
+            Square::G5,
+        ];
+
+        for sq in expected {
+            assert!(attacks.contains(sq), "Knight should attack {}", sq);
+        }
+        assert_eq!(attacks.pop_count(), 8);
+    }
+
+    #[test]
+    fn test_knight_corner_attack() {
+        // a1 的马只能攻击 b3 c2
+        let attacks = KNIGHT_ATTACKS[Square::A1.index()];
+
+        assert!(attacks.contains(Square::B3));
+        assert!(attacks.contains(Square::C2));
+        assert_eq!(attacks.pop_count(), 2);
+    }
+
+    #[test]
+    fn test_king_center_attack() {
+        let attacks = KING_ATTACKS[Square::E4.index()];
+        let expected = [
+            Square::D3,
+            Square::E3,
+            Square::F3,
+            Square::D4,
+            Square::F4,
+            Square::D5,
+            Square::E5,
+            Square::F5,
+        ];
+
+        for sq in expected {
+            assert!(attacks.contains(sq));
+        }
+        assert_eq!(attacks.pop_count(), 8);
+    }
+
+    #[test]
+    fn test_king_corner_attack() {
+        let attacks = KING_ATTACKS[Square::A1.index()];
+
+        assert!(attacks.contains(Square::A2));
+        assert!(attacks.contains(Square::B1));
+        assert!(attacks.contains(Square::B2));
+        assert_eq!(attacks.pop_count(), 3);
+    }
+
+    #[test]
+    fn test_white_pawn_attack() {
+        // 白兵e4: 攻击 d5 f5
+        let attacks = PAWN_ATTACKS[Color::White as usize][Square::E4.index()];
+
+        assert!(attacks.contains(Square::D5));
+        assert!(attacks.contains(Square::F5));
+        assert_eq!(attacks.pop_count(), 2);
+    }
+
+    #[test]
+    fn test_black_pawn_attack() {
+        // 黑兵 e5: 攻击 d4 f4
+        let attacks = PAWN_ATTACKS[Color::Black as usize][Square::E5.index()];
+
+        assert!(attacks.contains(Square::D4));
+        assert!(attacks.contains(Square::F4));
+    }
+
+    #[test]
+    fn test_rook_empty_board() {
+        let attacks = rook_rays(Square::E4, BitBoard::empty());
+        assert_eq!(attacks.pop_count(), 14); // 横向7 + 纵向7
+    }
+
+    #[test]
+    fn test_rook_blocked() {
+        let mut occupied = BitBoard::empty();
+        occupied.set(Square::E6); // e6阻挡
+
+        let attacks = rook_rays(Square::E4, occupied);
+
+        assert!(attacks.contains(Square::E5));
+        assert!(attacks.contains(Square::E6)); // 可以攻击阻挡棋子所在位置
+        assert!(!attacks.contains(Square::E7)); // 不能穿过
+    }
+
+    #[test]
+    fn test_bishop_empty_board() {
+        let attacks = bishop_rays(Square::E4, BitBoard::empty());
+        assert_eq!(attacks.pop_count(), 13);
+    }
+
+    #[test]
+    fn test_queen_empty_board() {
+        let attacks = queen_rays(Square::E4, BitBoard::empty());
+        assert_eq!(attacks.pop_count(), 27); // rook 14 + bishop 13
+    }
+
+    #[test]
+    fn test_attacked_by_knight() {
+        let mut board = Board::default();
+        board.add_piece(Square::E4, Piece::new(Color::Black, PieceKind::Knight));
+
+        assert!(is_square_attacked(&board, Square::F6, Color::Black));
+    }
+
+    #[test]
+    fn test_attacked_by_rook() {
+        let mut board = Board::default();
+        board.add_piece(Square::A1, Piece::new(Color::White, PieceKind::Rook));
+
+        assert!(is_square_attacked(&board, Square::A8, Color::White));
+    }
+
+    #[test]
+    fn test_rook_blocked_not_attacked() {
+        let mut board = Board::default();
+        board.add_piece(Square::A1, Piece::new(Color::White, PieceKind::Rook));
+        board.add_piece(Square::A4, Piece::new(Color::Black, PieceKind::Pawn));
+
+        assert!(!is_square_attacked(&board, Square::A8, Color::White));
+    }
+
+    #[test]
+    fn test_attacked_by_queen() {
+        let mut board = Board::default();
+        board.add_piece(Square::D4, Piece::new(Color::Black, PieceKind::Queen));
+
+        assert!(is_square_attacked(&board, Square::H8, Color::Black));
+    }
 }
