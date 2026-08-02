@@ -4,6 +4,7 @@
         "bitflags",
         "fullmove",
         "halfmove",
+        "movegen",
         "RNBQKBNR",
         "Zobrist"
     ]

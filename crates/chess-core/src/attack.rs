@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use crate::{BitBoard, Board, Color, PieceKind, Square};
 
 /// 马攻击表，`KNIGHT_ATTACKS[sq]`
-pub static KNIGHT_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
+pub(crate) static KNIGHT_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
     let mut table = [BitBoard::empty(); 64];
     for index in 0..64 {
         let sq = Square::new(index as u32).unwrap(); // SAFETY: index is valid here
@@ -13,7 +13,7 @@ pub static KNIGHT_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
 });
 
 /// 王攻击表，`KING_ATTACKS[sq]`
-pub static KING_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
+pub(crate) static KING_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
     let mut table = [BitBoard::empty(); 64];
     for index in 0..64 {
         let sq = Square::new(index as u32).unwrap(); // SAFETY: index is valid here
@@ -23,7 +23,7 @@ pub static KING_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
 });
 
 /// 兵攻击表，`PAWN_ATTACKS[color][sq]`
-pub static PAWN_ATTACKS: LazyLock<[[BitBoard; 64]; 2]> = LazyLock::new(|| {
+pub(crate) static PAWN_ATTACKS: LazyLock<[[BitBoard; 64]; 2]> = LazyLock::new(|| {
     let mut table = [[BitBoard::empty(); 64]; 2];
     for index in 0..64 {
         let sq = Square::new(index as u32).unwrap(); // SAFETY: index is valid here
@@ -34,17 +34,17 @@ pub static PAWN_ATTACKS: LazyLock<[[BitBoard; 64]; 2]> = LazyLock::new(|| {
 });
 
 /// 象攻击表，对角线4个方向
-pub fn bishop_rays(sq: Square, occupied: BitBoard) -> BitBoard {
+pub(crate) fn bishop_rays(sq: Square, occupied: BitBoard) -> BitBoard {
     sliding_attack(sq, occupied, &[(1, 1), (-1, 1), (1, -1), (-1, -1)])
 }
 
 /// 车攻击表，上下左右4个方向
-pub fn rook_rays(sq: Square, occupied: BitBoard) -> BitBoard {
+pub(crate) fn rook_rays(sq: Square, occupied: BitBoard) -> BitBoard {
     sliding_attack(sq, occupied, &[(0, 1), (0, -1), (1, 0), (-1, 0)])
 }
 
 /// 后攻击表，对角线+上下左右8个方向
-pub fn queen_rays(sq: Square, occupied: BitBoard) -> BitBoard {
+pub(crate) fn queen_rays(sq: Square, occupied: BitBoard) -> BitBoard {
     bishop_rays(sq, occupied) | rook_rays(sq, occupied)
 }
 
@@ -54,7 +54,7 @@ pub fn queen_rays(sq: Square, occupied: BitBoard) -> BitBoard {
 /// # 返回
 /// - true: 是
 /// - false: 否
-pub fn is_square_attacked(board: &Board, sq: Square, by_color: Color) -> bool {
+pub(crate) fn is_square_attacked(board: &Board, sq: Square, by_color: Color) -> bool {
     let sq_idx = sq.index();
 
     // 是否被pawn攻击

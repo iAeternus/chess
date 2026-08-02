@@ -10,6 +10,7 @@ mod piece;
 mod position;
 mod square;
 mod zobrist;
+mod movegen;
 
 pub use bitboard::BitBoard;
 pub use board::Board;

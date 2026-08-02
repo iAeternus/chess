@@ -18,6 +18,8 @@ pub enum MoveFlag {
     EnPassant = 5,
     /// 升变
     Promotion = 6,
+    /// 吃子升变
+    PromotionCapture = 7,
 }
 
 impl TryFrom<u8> for MoveFlag {
@@ -32,6 +34,7 @@ impl TryFrom<u8> for MoveFlag {
             4 => Ok(Self::Capture),
             5 => Ok(Self::EnPassant),
             6 => Ok(Self::Promotion),
+            7 => Ok(Self::PromotionCapture),
             _ => Err(()),
         }
     }
@@ -119,18 +122,16 @@ impl Move {
 
     /// 创建升变走法
     pub fn new_promotion(from: Square, to: Square, promotion: Promotion, capture: bool) -> Self {
-        debug_assert!(promotion != Promotion::None);
-
         let flag = if capture {
-            MoveFlag::Capture
+            MoveFlag::PromotionCapture
         } else {
             MoveFlag::Promotion
         };
 
-        let value = (from.index() as u32) << Self::FROM_SHIFT
-            | (to.index() as u32) << Self::TO_SHIFT
-            | (promotion as u32) << Self::PROMOTION_SHIFT
-            | (flag as u32) << Self::FLAG_SHIFT;
+        let value = (from.index() as u32)
+            | ((to.index() as u32) << 6)
+            | ((promotion as u32) << 12)
+            | ((flag as u32) << 16);
         Self(value)
     }
 
@@ -160,9 +161,11 @@ impl Move {
 
     /// 是否吃子
     pub fn is_capture(&self) -> bool {
-        matches!(self.flag(), MoveFlag::Capture | MoveFlag::EnPassant)
+        matches!(
+            self.flag(),
+            MoveFlag::Capture | MoveFlag::EnPassant | MoveFlag::PromotionCapture,
+        )
     }
-
     /// 是否升变
     pub fn is_promotion(&self) -> bool {
         self.promotion() != Promotion::None
@@ -243,7 +246,7 @@ mod tests {
     fn test_capture_promotion() {
         let mv = Move::new_promotion(Square::E7, Square::D8, Promotion::Queen, true);
 
-        assert_eq!(mv.flag(), MoveFlag::Capture);
+        assert_eq!(mv.flag(), MoveFlag::PromotionCapture);
         assert!(mv.is_capture());
         assert!(mv.is_promotion());
         assert_eq!(mv.promotion(), Promotion::Queen);
