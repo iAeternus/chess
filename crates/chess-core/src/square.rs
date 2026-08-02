@@ -1,4 +1,4 @@
-use std::{fmt::Display};
+use std::fmt::Display;
 
 /// 棋盘格
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -54,7 +54,7 @@ impl Display for Square {
 }
 
 macro_rules! define_squares {
-    ($($name:ident = $idx:expr),*) => {
+    ($($name:ident = $idx:expr),* $(,)?) => {
         impl Square {
             $(pub const $name: Square = Square($idx);)*
         }
@@ -132,7 +132,7 @@ define_squares! {
     E8 = 60,
     F8 = 61,
     G8 = 62,
-    H8 = 63
+    H8 = 63,
 }
 
 #[cfg(test)]
