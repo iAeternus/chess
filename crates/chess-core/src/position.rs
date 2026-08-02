@@ -1,4 +1,4 @@
-use crate::{Board, CastlingRights, Color, Piece, Result, Square, fen, zobrist::ZobristKeys};
+use crate::{Board, CastlingRights, Color, Piece, Result, Square, fen, zobrist::Zobrist};
 
 /// 局面
 pub struct Position {
@@ -27,17 +27,17 @@ impl Position {
         halfmove_clock: u32,
         fullmove_number: u32,
     ) -> Self {
-        let zobrist_key = ZobristKeys::compute(&board, side_to_move, castling, en_passant);
-
-        Self {
+        let mut position = Self {
             board,
             side_to_move,
             castling,
             en_passant,
             halfmove_clock,
             fullmove_number,
-            zobrist_key,
-        }
+            zobrist_key: 0,
+        };
+        position.zobrist_key = Zobrist::compute(&position);
+        position
     }
 
     pub fn startpos() -> Self {
