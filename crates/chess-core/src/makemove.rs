@@ -1,11 +1,10 @@
 use crate::{
-    CastlingRights, Color, Move, MoveFlag, Piece, PieceKind, Position, Square, board, position,
-    zobrist::Zobrist,
+    CastlingRights, Color, Move, MoveFlag, Piece, PieceKind, Position, Square, zobrist::Zobrist,
 };
 
-pub(crate) struct Undo {
+pub struct Undo {
     /// 执行的走法
-    mv: Move,
+    pub mv: Move,
     /// 被吃掉的棋子
     captured: Option<Piece>,
     /// 原行动方
