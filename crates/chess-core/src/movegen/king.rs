@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 
 use crate::{
-    Board, CastlingRights, Color, Move, MoveFlag, Piece, PieceKind, Position, Square,
+    Board, CastlingRights, Color, Move, MoveFlag, PieceKind, Position, Square,
     attack::KING_ATTACKS,
 };
 
@@ -173,7 +173,7 @@ mod tests {
     use super::*;
     use arrayvec::ArrayVec;
 
-    use crate::{Color, Move, MoveFlag, Position, Square, legality::is_legal};
+    use crate::{Color, Move, MoveFlag, Position, Square};
 
     #[test]
     fn test_king_empty_center() {

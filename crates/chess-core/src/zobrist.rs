@@ -84,6 +84,7 @@ static TABLE: LazyLock<ZobristTable> = LazyLock::new(ZobristTable::new);
 impl Zobrist {
     /// 初始化所有随机数
     /// LazyLock会自动初始化，该函数用于提前触发初始化
+    #[allow(unused)]
     pub fn init() {
         LazyLock::force(&TABLE);
     }
