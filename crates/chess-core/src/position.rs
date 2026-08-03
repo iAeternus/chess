@@ -81,6 +81,38 @@ impl Position {
         self.zobrist_key
     }
 
+    pub(crate) fn board_mut(&mut self) -> &mut Board {
+        &mut self.board
+    }
+
+    pub(crate) fn switch_side(&mut self) {
+        self.side_to_move = self.side_to_move.flip();
+    }
+
+    pub(crate) fn set_side_to_move(&mut self, color: Color) {
+        self.side_to_move = color;
+    }
+
+    pub(crate) fn set_castling(&mut self, rights: CastlingRights) {
+        self.castling = rights;
+    }
+
+    pub(crate) fn set_en_passant(&mut self, sq: Option<Square>) {
+        self.en_passant = sq;
+    }
+
+    pub(crate) fn set_halfmove_clock(&mut self, value: u32) {
+        self.halfmove_clock = value;
+    }
+
+    pub(crate) fn set_fullmove_number(&mut self, value: u32) {
+        self.fullmove_number = value;
+    }
+
+    pub(crate) fn set_zobrist(&mut self, key: u64) {
+        self.zobrist_key = key;
+    }
+
     pub fn piece_at(&self, sq: Square) -> Option<Piece> {
         self.board.piece_at(sq)
     }

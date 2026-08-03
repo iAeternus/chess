@@ -4,7 +4,9 @@
         "bitflags",
         "fullmove",
         "halfmove",
+        "makemove",
         "movegen",
+        "queenside",
         "RNBQKBNR",
         "Zobrist"
     ]

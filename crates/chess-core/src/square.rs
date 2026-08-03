@@ -25,6 +25,29 @@ impl Square {
         Some(Self(rank * 8 + file))
     }
 
+    /// 返回两个格子之间的中间格
+    /// 用于: 兵两步推进产生 en passant
+    /// 示例: e2 -> e4，返回e3
+    pub fn between(from: Square, to: Square) -> Option<Square> {
+        let from_rank = from.rank() as i8;
+        let to_rank = to.rank() as i8;
+        let from_file = from.file();
+        let to_file = to.file();
+
+        // 必须同一列
+        if from_file != to_file {
+            return None;
+        }
+
+        // 必须正好相差两行
+        if (from_rank - to_rank).abs() != 2 {
+            return None;
+        }
+
+        let middle_rank = (from_rank + to_rank) / 2;
+        Square::from_coord(from_file, middle_rank as u8)
+    }
+
     /// 数组索引
     pub fn index(&self) -> usize {
         self.0 as usize

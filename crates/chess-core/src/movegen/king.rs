@@ -1,8 +1,8 @@
 use arrayvec::ArrayVec;
 
 use crate::{
-    CastlingRights, Color, Move, MoveFlag, PieceKind, Position, Square,
-    attack::{KING_ATTACKS, is_square_attacked},
+    Board, CastlingRights, Color, Move, MoveFlag, Piece, PieceKind, Position, Square,
+    attack::KING_ATTACKS,
 };
 
 pub(crate) fn generate(position: &Position, color: Color, moves: &mut ArrayVec<Move, 256>) {
@@ -13,15 +13,17 @@ pub(crate) fn generate(position: &Position, color: Color, moves: &mut ArrayVec<M
 fn generate_king_moves(position: &Position, color: Color, moves: &mut ArrayVec<Move, 256>) {
     let board = position.board();
     let own = board.pieces(color);
+    let enemy_king = board.piece_kind(color.flip(), PieceKind::King);
     let kings = board.piece_kind(color, PieceKind::King);
     for from in kings {
-        let targets = KING_ATTACKS[from.index()] & !own;
+        let targets = KING_ATTACKS[from.index()] & !own & !enemy_king;
         for to in targets {
-            if board.piece_at(to).is_some() {
-                moves.push(Move::new(from, to, MoveFlag::Capture));
+            let flag = if board.piece_at(to).is_some() {
+                MoveFlag::Capture
             } else {
-                moves.push(Move::new(from, to, MoveFlag::Quiet));
-            }
+                MoveFlag::Quiet
+            };
+            moves.push(Move::new(from, to, flag));
         }
     }
 }
@@ -32,10 +34,10 @@ fn generate_king_moves(position: &Position, color: Color, moves: &mut ArrayVec<M
 /// 1. CastlingRights允许
 /// 2. 王和车未移动过
 /// 3. 中间无棋子
-/// 4. 王经过的格子没有被攻击
 ///
-/// 注意: 这里只生成伪合法走法，最终合法性由 make_move + is_square_attacked 再过滤
-pub fn generate_castling(position: &Position, color: Color, moves: &mut ArrayVec<Move, 256>) {
+/// 注意: 这里只生成伪合法走法，最终合法性由 make_move + is_square_attacked 再过滤；
+/// 王是否被将军、经过攻击格等合法性检查，由 legality::is_legal 完成
+fn generate_castling(position: &Position, color: Color, moves: &mut ArrayVec<Move, 256>) {
     let rights = position.castling();
 
     match color {
@@ -68,19 +70,21 @@ pub fn generate_castling(position: &Position, color: Color, moves: &mut ArrayVec
 /// 白方王翼易位
 ///
 /// e1 -> g1
-pub fn try_white_kingside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
+fn try_white_kingside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
     let board = position.board();
 
-    // f1,g1必须为空
-    if board.piece_at(Square::F1).is_some() || board.piece_at(Square::G1).is_some() {
+    // e1 必须有白王
+    if !has_piece(board, Color::White, PieceKind::King, Square::E1) {
         return;
     }
 
-    // 王不能经过攻击
-    if is_square_attacked(board, Square::E1, Color::Black)
-        || is_square_attacked(board, Square::F1, Color::Black)
-        || is_square_attacked(board, Square::G1, Color::Black)
-    {
+    // h1 必须有白车
+    if !has_piece(board, Color::White, PieceKind::Rook, Square::H1) {
+        return;
+    }
+
+    // f1,g1必须为空
+    if board.piece_at(Square::F1).is_some() || board.piece_at(Square::G1).is_some() {
         return;
     }
 
@@ -90,21 +94,21 @@ pub fn try_white_kingside(position: &Position, moves: &mut ArrayVec<Move, 256>) 
 /// 白方后翼易位
 ///
 /// e1 -> c1
-pub fn try_white_queenside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
+fn try_white_queenside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
     let board = position.board();
+
+    if !has_piece(board, Color::White, PieceKind::King, Square::E1) {
+        return;
+    }
+
+    if !has_piece(board, Color::White, PieceKind::Rook, Square::A1) {
+        return;
+    }
 
     // b1,c1,d1必须为空
     if board.piece_at(Square::B1).is_some()
         || board.piece_at(Square::C1).is_some()
         || board.piece_at(Square::D1).is_some()
-    {
-        return;
-    }
-
-    // 王经过 e1,d1,c1
-    if is_square_attacked(board, Square::E1, Color::Black)
-        || is_square_attacked(board, Square::D1, Color::Black)
-        || is_square_attacked(board, Square::C1, Color::Black)
     {
         return;
     }
@@ -118,14 +122,15 @@ pub fn try_white_queenside(position: &Position, moves: &mut ArrayVec<Move, 256>)
 fn try_black_kingside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
     let board = position.board();
 
-    if board.piece_at(Square::F8).is_some() || board.piece_at(Square::G8).is_some() {
+    if !has_piece(board, Color::Black, PieceKind::King, Square::E8) {
         return;
     }
 
-    if is_square_attacked(board, Square::E8, Color::White)
-        || is_square_attacked(board, Square::F8, Color::White)
-        || is_square_attacked(board, Square::G8, Color::White)
-    {
+    if !has_piece(board, Color::Black, PieceKind::Rook, Square::H8) {
+        return;
+    }
+
+    if board.piece_at(Square::F8).is_some() || board.piece_at(Square::G8).is_some() {
         return;
     }
 
@@ -138,6 +143,14 @@ fn try_black_kingside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
 fn try_black_queenside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
     let board = position.board();
 
+    if !has_piece(board, Color::Black, PieceKind::King, Square::E8) {
+        return;
+    }
+
+    if !has_piece(board, Color::Black, PieceKind::Rook, Square::A8) {
+        return;
+    }
+
     if board.piece_at(Square::B8).is_some()
         || board.piece_at(Square::C8).is_some()
         || board.piece_at(Square::D8).is_some()
@@ -145,14 +158,14 @@ fn try_black_queenside(position: &Position, moves: &mut ArrayVec<Move, 256>) {
         return;
     }
 
-    if is_square_attacked(board, Square::E8, Color::White)
-        || is_square_attacked(board, Square::D8, Color::White)
-        || is_square_attacked(board, Square::C8, Color::White)
-    {
-        return;
-    }
-
     moves.push(Move::new(Square::E8, Square::C8, MoveFlag::QueenCastle));
+}
+
+fn has_piece(board: &Board, color: Color, kind: PieceKind, square: Square) -> bool {
+    matches!(
+        board.piece_at(square),
+        Some(piece) if piece.color ==color && piece.kind==kind
+    )
 }
 
 #[cfg(test)]
@@ -160,7 +173,7 @@ mod tests {
     use super::*;
     use arrayvec::ArrayVec;
 
-    use crate::{Color, Move, MoveFlag, Position, Square};
+    use crate::{Color, Move, MoveFlag, Position, Square, legality::is_legal};
 
     #[test]
     fn test_king_empty_center() {
@@ -282,18 +295,6 @@ mod tests {
     }
 
     #[test]
-    fn test_castle_through_attack() {
-        // f1 被攻击
-        // 黑车 f8
-        let position = Position::from_fen("4k3/5r2/8/8/8/8/8/4K2R w K - 0 1").unwrap();
-        let mut moves = ArrayVec::<Move, 256>::new();
-
-        generate(&position, Color::White, &mut moves);
-
-        assert!(!moves.iter().any(|m| m.flag() == MoveFlag::KingCastle));
-    }
-
-    #[test]
     fn test_no_castle_without_right() {
         // 没有K权限
         let position = Position::from_fen("4k3/8/8/8/8/8/8/4K2R w - - 0 1").unwrap();
@@ -302,5 +303,77 @@ mod tests {
         generate(&position, Color::White, &mut moves);
 
         assert!(!moves.iter().any(|m| m.flag() == MoveFlag::KingCastle));
+    }
+
+    #[test]
+    fn test_castle_without_king() {
+        let position = Position::from_fen("4k3/8/8/8/8/8/8/7R w K - 0 1").unwrap();
+        let mut moves = ArrayVec::new();
+
+        generate(&position, Color::White, &mut moves);
+
+        assert!(!moves.iter().any(|m| m.flag() == MoveFlag::KingCastle));
+    }
+
+    #[test]
+    fn test_castle_requires_correct_rook() {
+        let cases = [
+            // 白王翼易位
+            // h1 没有车
+            ("4k3/8/8/8/8/8/8/4K3 w K - 0 1", Color::White),
+            // h1 是黑车
+            ("4k3/8/8/8/8/8/8/4K2r w K - 0 1", Color::White),
+            // h1 是白象
+            ("4k3/8/8/8/8/8/8/4K2B w K - 0 1", Color::White),
+            // 黑王翼易位
+            // h8 是白车
+            ("4k2R/8/8/8/8/8/8/4K3 b k - 0 1", Color::Black),
+            // h8 是黑马
+            ("4k2n/8/8/8/8/8/8/4K3 b k - 0 1", Color::Black),
+        ];
+
+        for (fen, color) in cases {
+            let position = Position::from_fen(fen).unwrap();
+            let mut moves = ArrayVec::<Move, 256>::new();
+
+            generate(&position, color, &mut moves);
+
+            assert!(
+                !moves.iter().any(|m| { m.flag() == MoveFlag::KingCastle }),
+                "illegal castle generated for fen: {}",
+                fen
+            );
+        }
+    }
+
+    #[test]
+    fn test_queenside_b_square_attack_allowed() {
+        let position = Position::from_fen("1r2k3/8/8/8/8/8/8/R3K3 w Q - 0 1").unwrap();
+        let mut moves = ArrayVec::new();
+
+        generate(&position, Color::White, &mut moves);
+
+        assert!(moves.iter().any(|m| m.flag() == MoveFlag::QueenCastle));
+    }
+
+    #[test]
+    fn test_castle_king_not_on_home_square() {
+        let position = Position::from_fen("4k3/8/8/8/8/8/4K3/7R w K - 0 1").unwrap();
+        let mut moves = ArrayVec::<Move, 256>::new();
+
+        generate(&position, Color::White, &mut moves);
+
+        assert!(!moves.iter().any(|m| m.flag() == MoveFlag::KingCastle));
+    }
+
+    #[test]
+    fn test_both_castling_available() {
+        let position = Position::from_fen("4k3/8/8/8/8/8/8/R3K2R w KQ - 0 1").unwrap();
+        let mut moves = ArrayVec::<Move, 256>::new();
+
+        generate(&position, Color::White, &mut moves);
+
+        assert!(moves.iter().any(|m| m.flag() == MoveFlag::KingCastle));
+        assert!(moves.iter().any(|m| m.flag() == MoveFlag::QueenCastle));
     }
 }

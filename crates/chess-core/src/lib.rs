@@ -5,6 +5,8 @@ mod castling;
 mod color;
 mod error;
 mod fen;
+mod legality;
+mod makemove;
 mod movegen;
 mod mv;
 mod piece;
