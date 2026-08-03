@@ -103,7 +103,7 @@ fn parse_side_to_move(s: &str, fen: &str) -> Result<Color> {
     match s {
         "w" => Ok(Color::White),
         "b" => Ok(Color::Black),
-        _ => return Err(ChessError::InvalidFen(fen.into())),
+        _ => Err(ChessError::InvalidFen(fen.into())),
     }
 }
 

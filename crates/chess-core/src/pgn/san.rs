@@ -129,15 +129,15 @@ pub fn parse_san(position: &Position, san: &str) -> Result<Move> {
             }
 
             // 匹配消歧义
-            if let Some(file) = disambig_file {
-                if mv.from().file() != file {
-                    return false;
-                }
+            if let Some(file) = disambig_file
+                && mv.from().file() != file
+            {
+                return false;
             }
-            if let Some(rank) = disambig_rank {
-                if mv.from().rank() != rank {
-                    return false;
-                }
+            if let Some(rank) = disambig_rank
+                && mv.from().rank() != rank
+            {
+                return false;
             }
 
             true

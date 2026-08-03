@@ -123,6 +123,7 @@ impl PieceTextureManager {
     }
 
     /// 获取棋子纹理的原始像素尺寸
+    #[allow(dead_code)]
     pub fn texture_size(&self) -> f32 {
         self.piece_size
     }

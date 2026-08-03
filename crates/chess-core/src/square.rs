@@ -12,7 +12,12 @@ impl Square {
         Some(Self(index as u8))
     }
 
-    /// SAFETY: index in valid range [0, 63]
+    /// Construct a `Square` without bounds checking.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure `index` is in the range `[0, 63]`.
+    /// Passing an index >= 64 will result in undefined behavior.
     pub unsafe fn new_unchecked(index: u32) -> Self {
         Self(index as u8)
     }

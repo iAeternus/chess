@@ -5,9 +5,9 @@ use crate::{BitBoard, Board, Color, PieceKind, Square};
 /// 马攻击表，`KNIGHT_ATTACKS[sq]`
 pub(crate) static KNIGHT_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
     let mut table = [BitBoard::empty(); 64];
-    for index in 0..64 {
+    for (index, entry) in table.iter_mut().enumerate() {
         let sq = Square::new(index as u32).unwrap(); // SAFETY: index is valid here
-        table[index] = generate_knight_attacks(sq);
+        *entry = generate_knight_attacks(sq);
     }
     table
 });
@@ -15,22 +15,23 @@ pub(crate) static KNIGHT_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
 /// 王攻击表，`KING_ATTACKS[sq]`
 pub(crate) static KING_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
     let mut table = [BitBoard::empty(); 64];
-    for index in 0..64 {
+    for (index, entry) in table.iter_mut().enumerate() {
         let sq = Square::new(index as u32).unwrap(); // SAFETY: index is valid here
-        table[index] = generate_king_attacks(sq);
+        *entry = generate_king_attacks(sq);
     }
     table
 });
 
 /// 兵攻击表，`PAWN_ATTACKS[color][sq]`
 pub(crate) static PAWN_ATTACKS: LazyLock<[[BitBoard; 64]; 2]> = LazyLock::new(|| {
-    let mut table = [[BitBoard::empty(); 64]; 2];
-    for index in 0..64 {
-        let sq = Square::new(index as u32).unwrap(); // SAFETY: index is valid here
-        table[Color::White as usize][index] = generate_pawn_attacks(sq, Color::White);
-        table[Color::Black as usize][index] = generate_pawn_attacks(sq, Color::Black);
+    let mut white_table = [BitBoard::empty(); 64];
+    let mut black_table = [BitBoard::empty(); 64];
+    for (idx, (w_entry, b_entry)) in white_table.iter_mut().zip(black_table.iter_mut()).enumerate() {
+        let sq = Square::new(idx as u32).unwrap();
+        *w_entry = generate_pawn_attacks(sq, Color::White);
+        *b_entry = generate_pawn_attacks(sq, Color::Black);
     }
-    table
+    [white_table, black_table]
 });
 
 /// 象攻击表，对角线4个方向
@@ -171,7 +172,7 @@ fn in_board(file: i8, rank: i8) -> bool {
 
 fn set_bit_board_from_coord(bb: &mut BitBoard, f: u8, r: u8) -> Square {
     // SAFETY: f and r is valid here
-    let target = Square::from_coord(f as u8, r as u8).unwrap();
+    let target = Square::from_coord(f, r).unwrap();
     bb.set(target);
     target
 }

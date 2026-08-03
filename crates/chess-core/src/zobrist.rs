@@ -46,10 +46,10 @@ impl ZobristTable {
         // 棋子随机表
         let mut piece = [[[0u64; 64]; 6]; 2];
 
-        for color in 0..2 {
-            for kind in 0..6 {
-                for square in 0..64 {
-                    piece[color][kind][square] = rng.random();
+        for color_entry in &mut piece {
+            for kind_entry in &mut *color_entry {
+                for entry in &mut *kind_entry {
+                    *entry = rng.random();
                 }
             }
         }

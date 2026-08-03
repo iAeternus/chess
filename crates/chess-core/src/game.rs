@@ -14,6 +14,12 @@ pub struct Game {
     headers: Vec<(String, String)>,
 }
 
+impl Default for Game {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Game {
     /// 从标准起始局面创建
     pub fn new() -> Self {
@@ -60,7 +66,7 @@ impl Game {
         let (_, undo) = self
             .history
             .pop()
-            .ok_or_else(|| ChessError::NothingToUndo)?;
+            .ok_or(ChessError::NothingToUndo)?;
 
         unmake_move(&mut self.position, undo);
 
@@ -83,7 +89,7 @@ impl Game {
             .ok_or(ChessError::NoKing(side))?;
 
         Ok(is_square_attacked(
-            &self.position.board(),
+            self.position.board(),
             king,
             side.flip(),
         ))
