@@ -24,8 +24,11 @@ pub struct ThemeColors {
     pub board_light: Color32,
     pub board_dark: Color32,
 
-    // 棋盘标注颜色
-    pub label_color: Color32,
+    /// 坐标在深格上的文字颜色（浅色）
+    pub coord_light: Color32,
+    /// 坐标在浅格上的文字颜色（深色，保留用于未来 coords-in 模式）
+    #[allow(dead_code)]
+    pub coord_dark: Color32,
 
     // 将军光晕（三层径向渐变）
     pub check_glow_inner: Color32,
@@ -65,11 +68,14 @@ impl AppTheme {
 
                 board_light,
                 board_dark,
-                label_color: Color32::from_rgb(160, 160, 160),
+                // 深格上浅色文字，浅格上深色文字
+                coord_light: Color32::from_rgba_premultiplied(238, 238, 210, 200),
+                coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
-                check_glow_inner: Color32::from_rgba_premultiplied(255, 40, 40, 90),
-                check_glow_mid: Color32::from_rgba_premultiplied(255, 60, 60, 50),
-                check_glow_outer: Color32::from_rgba_premultiplied(255, 80, 80, 25),
+                // Lichess 风格将军光晕：中心亮红 → 边缘完全透明
+                check_glow_inner: Color32::from_rgb(255, 0, 0),          // 0%: 实心亮红
+                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200),  // 25%: 暗红半透明
+                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0),  // 89%: 完全透明
 
                 selected_highlight: Color32::from_rgba_premultiplied(100, 180, 100, 140),
                 legal_move_dot: Color32::from_rgba_premultiplied(0, 0, 0, 50),
@@ -88,11 +94,13 @@ impl AppTheme {
 
                 board_light,
                 board_dark,
-                label_color: Color32::from_rgb(120, 120, 120),
+                coord_light: Color32::from_rgba_premultiplied(238, 238, 210, 200),
+                coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
-                check_glow_inner: Color32::from_rgba_premultiplied(255, 40, 40, 90),
-                check_glow_mid: Color32::from_rgba_premultiplied(255, 60, 60, 50),
-                check_glow_outer: Color32::from_rgba_premultiplied(255, 80, 80, 25),
+                // Lichess 风格将军光晕：中心亮红 → 边缘完全透明
+                check_glow_inner: Color32::from_rgb(255, 0, 0),          // 0%: 实心亮红
+                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200),  // 25%: 暗红半透明
+                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0),  // 89%: 完全透明
 
                 selected_highlight: Color32::from_rgba_premultiplied(100, 180, 100, 140),
                 legal_move_dot: Color32::from_rgba_premultiplied(0, 0, 0, 40),

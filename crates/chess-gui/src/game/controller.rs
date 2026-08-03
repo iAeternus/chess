@@ -69,7 +69,7 @@ pub struct GameController {
 }
 
 impl GameController {
-    // ── 构造 ────────────────────────────────────────────────
+    // 构造
 
     /// 创建默认对局（标准初始局面，双人对战模式）
     pub fn new() -> Self {
@@ -130,7 +130,7 @@ impl GameController {
         Ok(controller)
     }
 
-    // ── 局面访问 ────────────────────────────────────────────
+    // 局面访问
 
     /// 获取当前局面的不可变引用
     pub fn current_position(&self) -> &Position {
@@ -165,7 +165,7 @@ impl GameController {
         }
     }
 
-    // ── 走法执行 ────────────────────────────────────────────
+    // 走法执行
 
     /// 点击格子：根据当前选中状态决定行为
     ///
@@ -184,7 +184,7 @@ impl GameController {
             || piece_at_sq.is_some_and(|p| p.color == side_to_move);
 
         if let Some(selected) = self.selected_square {
-            // ── 已有选中棋子 ──
+            // 已有选中棋子
             if let Some(_piece) = piece_at_sq
                 && can_select
                 && sq != selected
@@ -222,7 +222,7 @@ impl GameController {
             return SelectionResult::MoveMade { mv };
         }
 
-        // ── 无选中棋子 ──
+        // 无选中棋子
         if piece_at_sq.is_some() && can_select {
             self.set_selected(sq);
             return SelectionResult::Selected { square: sq };
@@ -277,7 +277,7 @@ impl GameController {
         self.selected_square = None;
     }
 
-    // ── 历史导航 ────────────────────────────────────────────
+    // 历史导航
 
     /// 是否可以后退
     pub fn can_go_back(&self) -> bool {
@@ -357,7 +357,7 @@ impl GameController {
         }
     }
 
-    // ── 局面快照（用于 SAN 生成） ──────────────────────────────
+    // 局面快照（用于 SAN 生成）
 
     /// 获取指定 ply 之后的局面。
     ///
@@ -375,7 +375,7 @@ impl GameController {
         Some(pos)
     }
 
-    // ── 状态查询 ────────────────────────────────────────────
+    // 状态查询
 
     pub fn mode(&self) -> GameMode {
         self.mode
@@ -417,7 +417,7 @@ impl GameController {
         self.selected_square
     }
 
-    // ── PGN ─────────────────────────────────────────────────
+    // PGN
 
     /// 导出当前对局为 PGN 字符串
     pub fn export_pgn(&mut self) -> String {
@@ -442,7 +442,7 @@ impl GameController {
         self.game.headers()
     }
 
-    // ── 对局控制 ────────────────────────────────────────────
+    // 对局控制
 
     /// 开始新对局（保持当前模式）
     pub fn new_game(&mut self) {
@@ -454,7 +454,7 @@ impl GameController {
         self.refresh_san_cache();
     }
 
-    // ── 引擎接口 ────────────────────────────────────────────
+    // 引擎接口
 
     /// 请求引擎走一步（仅在 HumanVsAI 模式下有效）
     pub fn request_engine_move(&mut self) -> Option<Move> {
@@ -480,7 +480,7 @@ impl GameController {
         self.engine.as_ref().map(|e| e.name())
     }
 
-    // ── 内部方法 ────────────────────────────────────────────
+    // 内部方法
 
     /// 设置选中格子
     fn set_selected(&mut self, sq: Square) {

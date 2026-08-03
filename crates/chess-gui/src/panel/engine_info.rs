@@ -30,60 +30,98 @@ impl EngineInfoPanel {
         ui.heading("Engine");
         ui.separator();
 
+        // 引擎名称
         if let Some(ref name) = info.name {
-            ui.label(format!("Engine: {name}"));
+            ui.label(
+                egui::RichText::new(format!("{name}"))
+                    .size(15.0)
+                    .strong(),
+            );
         } else {
-            ui.label("Engine: --");
+            ui.label(
+                egui::RichText::new("No engine loaded")
+                    .size(14.0)
+                    .color(egui::Color32::from_rgb(150, 150, 150)),
+            );
+            return;
         }
 
-        // 评估
-        let eval_text = match (info.score_cp, info.score_mate) {
-            (_, Some(mate)) => {
-                if mate > 0 {
-                    format!("Mate in {} (White)", mate)
-                } else {
-                    format!("Mate in {} (Black)", -mate)
+        // 评估分数（仅在有数据时显示）
+        let has_eval = info.score_cp.is_some() || info.score_mate.is_some();
+        if has_eval {
+            let eval_text = match (info.score_cp, info.score_mate) {
+                (_, Some(mate)) => {
+                    if mate > 0 {
+                        format!("#{mate}")
+                    } else {
+                        format!("#{}", -mate)
+                    }
                 }
-            }
-            (Some(cp), None) => {
-                if cp > 0 {
-                    format!("+{:.2}", cp as f64 / 100.0)
-                } else {
-                    format!("{:.2}", cp as f64 / 100.0)
+                (Some(cp), _) => {
+                    if cp > 0 {
+                        format!("+{:.2}", cp as f64 / 100.0)
+                    } else {
+                        format!("{:.2}", cp as f64 / 100.0)
+                    }
                 }
-            }
-            (None, None) => "--".to_string(),
-        };
-        ui.label(format!("Eval: {eval_text}"));
-
-        // 深度
-        if let Some(d) = info.depth {
-            ui.label(format!("Depth: {d}"));
-        } else {
-            ui.label("Depth: --");
+                _ => unreachable!(),
+            };
+            ui.vertical_centered(|ui| {
+                ui.label(
+                    egui::RichText::new(&eval_text)
+                        .size(24.0)
+                        .strong(),
+                );
+            });
         }
 
         // 最佳走法
         if let Some(ref bm) = info.best_move {
             ui.label(format!("Best: {bm}"));
-        } else {
-            ui.label("Best: --");
         }
 
-        // 搜索信息
+        // 深度 + 节点信息
+        let mut meta_parts: Vec<String> = Vec::new();
+        if let Some(d) = info.depth {
+            meta_parts.push(format!("Depth {d}"));
+        }
         if let Some(nodes) = info.nodes {
             if let Some(nps) = info.nps {
-                ui.label(format!("{nodes} nodes ({nps} nps)"));
+                meta_parts.push(format!("{nodes} nodes ({nps} nps)"));
             } else {
-                ui.label(format!("{nodes} nodes"));
+                meta_parts.push(format!("{nodes} nodes"));
             }
+        }
+        if !meta_parts.is_empty() {
+            ui.label(
+                egui::RichText::new(meta_parts.join(" · "))
+                    .size(13.0)
+                    .color(egui::Color32::from_rgb(150, 150, 150)),
+            );
         }
 
         // 主变
         if !info.pv.is_empty() {
             ui.separator();
-            ui.label("PV:");
-            ui.label(info.pv.join(" "));
+            ui.label(
+                egui::RichText::new("PV:")
+                    .size(13.0)
+                    .color(egui::Color32::from_rgb(150, 150, 150)),
+            );
+            ui.label(
+                egui::RichText::new(info.pv.join(" "))
+                    .size(13.0)
+                    .family(egui::FontFamily::Monospace),
+            );
+        }
+
+        // 没有任何分析数据时给出提示
+        if !has_eval && info.best_move.is_none() && meta_parts.is_empty() && info.pv.is_empty() {
+            ui.label(
+                egui::RichText::new("No analysis data available")
+                    .size(13.0)
+                    .color(egui::Color32::from_rgb(150, 150, 150)),
+            );
         }
     }
 }

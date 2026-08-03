@@ -4,13 +4,13 @@
 
 use chess_ai::RandomEngine;
 use chess_core::{Piece, Promotion, Square};
-use egui::{Align2, Pos2, Rect, Sense};
+use egui::{Align2, Pos2, Rect, Sense, Vec2};
 
 use crate::board::renderer::BoardRenderer;
 use crate::board::state::BoardState;
 use crate::game::controller::{GameController, GameMode, SelectionResult};
 use crate::panel::engine_info::{EngineInfo, EngineInfoPanel};
-use crate::panel::move_list::MoveListPanel;
+use crate::panel::move_list::{MoveListAction, MoveListPanel};
 use crate::panel::toolbar::{Toolbar, ToolbarAction};
 use crate::piece::texture::PieceTextureManager;
 use crate::theme::AppTheme;
@@ -71,7 +71,7 @@ impl ChessApp {
         }
     }
 
-    // ── 状态同步 ────────────────────────────────────────────
+    // 状态同步
 
     fn update_status(&mut self) {
         let at_end = self.controller.current_ply() >= self.controller.total_moves()
@@ -117,7 +117,7 @@ impl ChessApp {
         }
     }
 
-    // ── 键盘处理 ────────────────────────────────────────────
+    // 键盘处理
 
     fn handle_keyboard(&mut self, ctx: &egui::Context) {
         ctx.input(|i| {
@@ -142,12 +142,12 @@ impl ChessApp {
         });
     }
 
-    // ── 菜单栏 ──────────────────────────────────────────────
+    // 菜单栏
 
     fn show_menu(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                // ── File ──
+                // File
                 ui.menu_button("File", |ui| {
                     if ui.button("New (N)").clicked() {
                         self.controller.new_game();
@@ -169,7 +169,7 @@ impl ChessApp {
                     }
                 });
 
-                // ── View ──
+                // View
                 ui.menu_button("View", |ui| {
                     if ui
                         .button("Flip Board (R)")
@@ -203,7 +203,7 @@ impl ChessApp {
                     });
                 });
 
-                // ── Mode ──
+                // Mode
                 ui.menu_button("Mode", |ui| {
                     if ui.button("Human vs Human").clicked() {
                         self.controller
@@ -233,15 +233,31 @@ impl ChessApp {
         });
     }
 
-    // ── 侧边面板 ────────────────────────────────────────────
+    // 侧边面板
 
     fn show_side_panel(&mut self, ctx: &egui::Context) {
         egui::SidePanel::right("side_panel")
             .resizable(false)
-            .default_width(300.0)
-            .min_width(300.0)
+            .default_width(340.0)
+            .min_width(340.0)
             .show(ctx, |ui| {
-                // ── 引擎信息 ──
+                // 侧边栏字体（放大以提升可读性）
+                let mut style = (*ui.ctx().style()).clone();
+                style.text_styles.insert(
+                    egui::TextStyle::Body,
+                    egui::FontId::new(15.0, egui::FontFamily::Proportional),
+                );
+                style.text_styles.insert(
+                    egui::TextStyle::Button,
+                    egui::FontId::new(15.0, egui::FontFamily::Proportional),
+                );
+                style.text_styles.insert(
+                    egui::TextStyle::Heading,
+                    egui::FontId::new(18.0, egui::FontFamily::Proportional),
+                );
+                ui.ctx().set_style(style);
+
+                // 引擎信息
                 let engine_info = EngineInfo {
                     name: self
                         .controller
@@ -252,7 +268,7 @@ impl ChessApp {
                 self.engine_info_panel.show(ui, &engine_info);
                 ui.separator();
 
-                // ── 模式与位置 ──
+                // 模式与位置
                 let mode_text = match self.controller.mode() {
                     GameMode::HumanVsHuman => "Mode: Human vs Human",
                     GameMode::HumanVsAI => "Mode: Human vs AI",
@@ -267,24 +283,10 @@ impl ChessApp {
                 ));
                 ui.separator();
 
-                // ── 工具栏 ──
-                let actions = self.toolbar.show(
-                    ui,
-                    self.controller.can_go_back(),
-                    self.controller.can_go_forward(),
-                );
+                // 工具栏
+                let actions = self.toolbar.show(ui);
                 for action in actions {
                     match action {
-                        ToolbarAction::GoToStart => {
-                            self.controller.go_to_start()
-                        }
-                        ToolbarAction::GoBack => self.controller.go_back(),
-                        ToolbarAction::GoForward => {
-                            self.controller.go_forward()
-                        }
-                        ToolbarAction::GoToEnd => {
-                            self.controller.go_to_end()
-                        }
                         ToolbarAction::FlipBoard => {
                             self.board_renderer.flipped =
                                 !self.board_renderer.flipped
@@ -296,58 +298,90 @@ impl ChessApp {
                 }
                 ui.separator();
 
-                // ── 走法列表 ──
+                // 走法列表（含导航按钮）
                 let moves = self.controller.move_history().to_vec();
                 let san_list = self.controller.san_list().to_vec();
                 let current_ply = self.controller.current_ply();
+                let can_back = self.controller.can_go_back();
+                let can_forward = self.controller.can_go_forward();
                 self.move_list_panel.show(
                     ui,
                     &moves,
                     &san_list,
                     current_ply,
                     ui.available_height(),
-                    |ply| self.controller.go_to_ply(ply),
+                    can_back,
+                    can_forward,
+                    |action| match action {
+                        MoveListAction::JumpToPly(ply) => self.controller.go_to_ply(ply),
+                        MoveListAction::GoToStart => self.controller.go_to_start(),
+                        MoveListAction::GoBack => self.controller.go_back(),
+                        MoveListAction::GoForward => self.controller.go_forward(),
+                        MoveListAction::GoToEnd => self.controller.go_to_end(),
+                    },
                 );
             });
     }
 
-    // ── 棋盘区域 ────────────────────────────────────────────
+    // 棋盘区域
 
     fn show_board(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            egui::Frame::default()
-                .inner_margin(egui::Margin::same(10))
-                .show(ui, |ui| {
-                    let board_rect = BoardRenderer::board_rect(ui);
+            let available = ui.available_size();
+
+            // 取较小维度作为基准，不强制放大（防止窗口缩小时溢出）
+            let max_side = available.x.min(available.y);
+            const MIN_BOARD_SIDE: f32 = 400.0;
+            let side = if max_side < MIN_BOARD_SIDE {
+                max_side
+            } else {
+                max_side * self.board_renderer.board_scale()
+            };
+
+            // 棋盘在 available 区域内居中
+            let board_pos = Pos2::new(
+                ui.cursor().min.x + (available.x - side) / 2.0,
+                ui.cursor().min.y + (available.y - side) / 2.0,
+            );
+
+            // 在父布局中占位
+            ui.allocate_space(Vec2::new(available.x, available.y));
+
+            // 在精确位置创建子 UI，避免 horizontal layout 的 clip_rect 偏移
+            let board_alloc = Rect::from_min_size(board_pos, Vec2::new(side, side));
+            ui.allocate_new_ui(
+                egui::UiBuilder::new().max_rect(board_alloc),
+                |ui| {
                     let is_replay =
                         self.controller.mode() == GameMode::Replay;
-
-                    // 构建渲染状态
-                    let board_state = self.build_board_state();
-
-                    // ── 渲染 ──
-                    self.board_renderer.render(
-                        ui,
-                        board_rect,
-                        &board_state,
-                        &self.piece_textures,
-                    );
-
-                    // ── 交互 ──
                     let sense = if is_replay {
                         Sense::hover()
                     } else {
                         Sense::click_and_drag()
                     };
-                    let response =
-                        ui.interact(board_rect, ui.next_auto_id(), sense);
 
-                    if is_replay {
-                        return;
+                    let (response, painter) =
+                        ui.allocate_painter(Vec2::new(side, side), sense);
+
+                    // board_rect 来自 egui 实际分配，非手动计算
+                    let board_rect = response.rect;
+
+                    let board_state = self.build_board_state();
+
+                    // 渲染（使用已分配的 painter）
+                    self.board_renderer.paint(
+                        &painter,
+                        board_rect,
+                        &board_state,
+                        &self.piece_textures,
+                    );
+
+                    // 交互（使用同一个 response，无需额外 ui.interact）
+                    if !is_replay {
+                        self.handle_board_interaction(response, board_rect, ctx);
                     }
-
-                    self.handle_board_interaction(response, board_rect, ctx);
-                });
+                },
+            );
         });
     }
 
@@ -358,7 +392,7 @@ impl ChessApp {
         board_rect: Rect,
         ctx: &egui::Context,
     ) {
-        // ── 拖拽开始 ──
+        // 拖拽开始
         if response.drag_started()
             && let Some(pos) = response.interact_pointer_pos()
         {
@@ -390,7 +424,7 @@ impl ChessApp {
             }
         }
 
-        // ── 拖拽移动 ──
+        // 拖拽移动
         if response.dragged()
             && let Some(pos) = response.interact_pointer_pos()
             && let Some((_piece, _from, ref mut drag_pos)) = self.drag
@@ -399,7 +433,7 @@ impl ChessApp {
             ctx.request_repaint();
         }
 
-        // ── 拖拽释放 ──
+        // 拖拽释放
         if response.drag_stopped()
             && let Some((_piece, _from, pos)) = self.drag.take()
         {
@@ -416,7 +450,7 @@ impl ChessApp {
             }
         }
 
-        // ── 点击 ──
+        // 点击
         if response.clicked()
             && let Some(local) = response.interact_pointer_pos()
         {
@@ -473,7 +507,7 @@ impl ChessApp {
         }
     }
 
-    // ── 升变弹窗 ────────────────────────────────────────────
+    // 升变弹窗
 
     fn show_promotion_dialog(&mut self, ctx: &egui::Context) {
         let (from, to) = match self.pending_promotion {
@@ -503,7 +537,7 @@ impl ChessApp {
             });
     }
 
-    // ── PGN 导入/导出 ──────────────────────────────────────
+    // PGN 导入/导出
 
     fn open_pgn(&mut self) {
         if let Some(path) = rfd::FileDialog::new()
@@ -553,7 +587,7 @@ impl ChessApp {
         }
     }
 
-    // ── 引擎 ────────────────────────────────────────────────
+    // 引擎
 
     fn handle_engine(&mut self, ctx: &egui::Context) {
         if self.engine_pending || self.controller.is_engine_turn() {

@@ -3,21 +3,35 @@
 //! 使用 `egui::Painter` 进行全部绘制，不依赖棋盘图片。
 
 use chess_core::{MoveFlag, Square};
-use egui::{Align2, Color32, FontId, Pos2, Rect, Sense, Stroke, Vec2};
+use egui::{Align2, Color32, FontId, Pos2, Rect, Stroke, Vec2};
 
 use crate::board::state::BoardState;
 use crate::piece::texture::PieceTextureManager;
 use crate::theme::ThemeColors;
 
-/// 棋盘边距占一格的比例
-const MARGIN_RATIO: f32 = 0.35;
-/// 最小棋盘尺寸（像素）
-const MIN_BOARD_SIZE: f32 = 480.0;
+/// 圆角半径占格子的比例
+const ROUNDING_RATIO: f32 = 0.06;
+/// 棋子占格子的比例
+const PIECE_RATIO: f32 = 0.90;
+
+/// 棋盘填充可用空间的比例（Lichess uniboard 风格）
+const BOARD_SCALE: f32 = 0.95;
+/// 坐标外边距的等效格子数（coords-out 模式下总外边距）
+const COORD_MARGIN: f32 = 0.5;
+
+/// 坐标标注显示模式
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CoordMode {
+    /// 坐标在棋盘格子外侧（Lichess 默认），带外边距防止裁切
+    Outside,
+}
 
 pub struct BoardRenderer {
     /// 是否翻转棋盘（黑方视角）
     pub flipped: bool,
     colors: ThemeColors,
+    #[allow(dead_code)]
+    coord_mode: CoordMode,
 }
 
 impl BoardRenderer {
@@ -25,6 +39,7 @@ impl BoardRenderer {
         Self {
             flipped: false,
             colors,
+            coord_mode: CoordMode::Outside,
         }
     }
 
@@ -32,24 +47,21 @@ impl BoardRenderer {
         self.colors = colors;
     }
 
-    // ── 布局计算（静态方法）─────────────────────────────────
-
-    /// 计算棋盘整体矩形：可用空间内最大的居中正方形
-    pub fn board_rect(ui: &egui::Ui) -> Rect {
-        let available = ui.available_size();
-        let side = available.x.min(available.y).max(MIN_BOARD_SIZE);
-        let x0 = ui.cursor().min.x + (available.x - side) / 2.0;
-        let y0 = ui.cursor().min.y + (available.y - side) / 2.0;
-        Rect::from_min_size(Pos2::new(x0, y0), Vec2::new(side, side))
+    /// 棋盘缩放系数（占可用空间的比例）
+    pub fn board_scale(&self) -> f32 {
+        BOARD_SCALE
     }
 
-    /// 8×8 格子的内部区域（不含坐标边距）
+    // 布局计算（静态方法）
+
+    /// 计算 8×8 格子区域（从 board_rect 减去坐标外边距）
     pub fn inner_rect(board_rect: Rect) -> Rect {
-        let sq = board_rect.width() / (8.0 + 2.0 * MARGIN_RATIO);
-        let m = sq * MARGIN_RATIO;
-        Rect::from_min_size(
-            Pos2::new(board_rect.min.x + m, board_rect.min.y + m),
-            Vec2::new(sq * 8.0, sq * 8.0),
+        let outer_side = board_rect.width();
+        let sq_size = outer_side / (8.0 + COORD_MARGIN);
+        let margin = sq_size * COORD_MARGIN / 2.0;
+        Rect::from_min_max(
+            Pos2::new(board_rect.min.x + margin, board_rect.min.y + margin),
+            Pos2::new(board_rect.max.x - margin, board_rect.max.y - margin),
         )
     }
 
@@ -93,7 +105,7 @@ impl BoardRenderer {
         )
     }
 
-    // ── 内部辅助 ────────────────────────────────────────────
+    // 内部辅助
 
     /// 格子在屏幕上的矩形
     fn sq_rect(board_rect: Rect, sq: Square, flipped: bool) -> Rect {
@@ -122,36 +134,33 @@ impl BoardRenderer {
         Pos2::new(pos.x - off.x, pos.y - off.y)
     }
 
-    // ── 主渲染 ──────────────────────────────────────────────
+    // 主渲染
 
-    /// 渲染棋盘的全部视觉元素
+    /// 在已分配的 Painter 上绘制全部棋盘元素
     ///
-    /// * `ui` — egui 上下文
-    /// * `board_rect` — 棋盘在屏幕上的矩形
+    /// * `p` — 已通过 `ui.allocate_painter()` 分配的 Painter
+    /// * `board_rect` — 分配返回的实际屏幕矩形（`response.rect`）
     /// * `state` — 棋盘渲染状态
     /// * `textures` — 棋子纹理管理器
-    pub fn render(
+    pub fn paint(
         &self,
-        ui: &mut egui::Ui,
+        p: &egui::Painter,
         board_rect: Rect,
         state: &BoardState,
         textures: &PieceTextureManager,
     ) {
         let inner = Self::inner_rect(board_rect);
         let sq_size = inner.width() / 8.0;
-
-        // 仅渲染用 Painter，交互由外部 ui.interact(...) 处理
-        let (_response, p) = ui.allocate_painter(board_rect.size(), Sense::hover());
         let off = board_rect.min.to_vec2();
 
-        // ── 背景 ──
+        // 背景
         p.rect_filled(
             Rect::from_min_size(Pos2::ZERO, board_rect.size()),
             0.0,
             self.colors.bg,
         );
 
-        // ── 64 格 ──
+        // 64 格
         for rank in 0..8u8 {
             for file in 0..8u8 {
                 let (df, dr) = if self.flipped {
@@ -171,7 +180,20 @@ impl BoardRenderer {
             }
         }
 
-        // ── 最后一步高亮 ──
+        // 棋盘圆角边框
+        let rounding = egui::CornerRadius::same((sq_size * ROUNDING_RATIO) as u8);
+        let inner_local = Rect::from_min_size(
+            Pos2::new(inner.min.x - off.x, inner.min.y - off.y),
+            inner.size(),
+        );
+        p.rect_stroke(
+            inner_local,
+            rounding,
+            Stroke::new(sq_size * 0.04, self.colors.bg),
+            egui::StrokeKind::Middle,
+        );
+
+        // 最后一步高亮
         if let Some(mv) = state.last_move {
             for sq in [mv.from(), mv.to()] {
                 let color = if sq == mv.to() {
@@ -184,50 +206,37 @@ impl BoardRenderer {
             }
         }
 
-        // ── 将军光晕 ──
+        // 将军光晕
+        // 将军光晕（Lichess 风格：多层同心圆模拟径向渐变，中心亮红→边缘透明）
         if let Some(king_sq) = state.king_in_check {
             let c = Self::square_center(board_rect, king_sq, self.flipped);
             let cx = c.x - off.x;
             let cy = c.y - off.y;
 
-            // 三层同心圆产生渐变光晕效果
-            p.circle_filled(
-                Pos2::new(cx, cy),
-                sq_size * 0.95,
-                self.colors.check_glow_outer,
-            );
-            p.circle_filled(
-                Pos2::new(cx, cy),
-                sq_size * 0.75,
-                self.colors.check_glow_mid,
-            );
-            p.circle_filled(
-                Pos2::new(cx, cy),
-                sq_size * 0.55,
-                self.colors.check_glow_inner,
-            );
+            // 5 层从外到内绘制，内层覆盖外层中心
+            let mid_fade = Color32::from_rgba_premultiplied(200, 0, 0, 120);
+            let outer_fade = Color32::from_rgba_premultiplied(180, 0, 0, 40);
 
-            // 王所在格子也高亮
-            let r = Self::to_local(
-                &Self::sq_rect(board_rect, king_sq, self.flipped),
-                off,
-            );
-            p.rect_filled(r, 0.0, self.colors.selected_highlight);
+            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.95, self.colors.check_glow_outer);
+            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.85, outer_fade);
+            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.70, mid_fade);
+            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.50, self.colors.check_glow_mid);
+            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.30, self.colors.check_glow_inner);
         }
 
-        // ── 选中高亮 ──
+        // 选中高亮
         if let Some(sq) = state.selected_square {
             let r = Self::to_local(&Self::sq_rect(board_rect, sq, self.flipped), off);
             p.rect_filled(r, 0.0, self.colors.selected_highlight);
         }
 
-        // ── 拖拽来源高亮 ──
+        // 拖拽来源高亮
         if let Some((_piece, from, _pos)) = &state.drag {
             let r = Self::to_local(&Self::sq_rect(board_rect, *from, self.flipped), off);
             p.rect_filled(r, 0.0, self.colors.drag_source);
         }
 
-        // ── 合法走法提示：圆点（普通）/ 圆环（吃子） ──
+        // 合法走法提示：圆点（普通）/ 圆环（吃子）
         for mv in &state.legal_moves {
             let tgt = mv.to();
             let c = Self::square_center(board_rect, tgt, self.flipped);
@@ -254,12 +263,12 @@ impl BoardRenderer {
             }
         }
 
-        // ── 箭头 ──
+        // 箭头
         for arrow in &state.arrows {
             self.draw_arrow(&p, board_rect, arrow, off, sq_size);
         }
 
-        // ── 棋子 ──
+        // 棋子
         for rank in 0..8u8 {
             for file in 0..8u8 {
                 let sq = Square::from_coord(file, rank).unwrap();
@@ -278,74 +287,78 @@ impl BoardRenderer {
                         piece.color,
                         piece.kind,
                         Self::pt_local(c, off),
-                        sq_size * 0.85,
+                        sq_size * PIECE_RATIO,
                     );
                 }
             }
         }
 
-        // ── 拖拽浮子 ──
+        // 拖拽浮子
         if let Some((piece, from, mouse_pos)) = &state.drag {
-            // 来源格画半透明残影
+            // 来源格画半透明残影（Lichess: opacity 0.3）
             let sc = Self::square_center(board_rect, *from, self.flipped);
-            textures.render(
-                &p,
-                piece.color,
-                piece.kind,
-                Self::pt_local(sc, off),
-                sq_size * 0.85,
+            let ghost_half = sq_size * PIECE_RATIO / 2.0;
+            let ghost_rect = Rect::from_min_max(
+                Pos2::new(sc.x - off.x - ghost_half, sc.y - off.y - ghost_half),
+                Pos2::new(sc.x - off.x + ghost_half, sc.y - off.y + ghost_half),
+            );
+            let tex = textures.get(piece.color, piece.kind);
+            let ghost_tint = Color32::from_rgba_premultiplied(255, 255, 255, 77);
+            p.image(
+                tex.id(),
+                ghost_rect,
+                Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                ghost_tint,
             );
 
-            // 鼠标位置画跟随棋子（半透明）
-            let tint = Color32::from_rgba_premultiplied(255, 255, 255, 200);
-            let half = sq_size * 0.85 / 2.0;
+            // 鼠标位置画跟随棋子（完全不透明）
+            let half = sq_size * PIECE_RATIO / 2.0;
             let fr = Rect::from_min_max(
                 Pos2::new(mouse_pos.x - half, mouse_pos.y - half),
                 Pos2::new(mouse_pos.x + half, mouse_pos.y + half),
             );
-            let tex = textures.get(piece.color, piece.kind);
             p.image(
                 tex.id(),
                 fr,
                 Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                tint,
+                Color32::WHITE,
             );
         }
 
-        // ── 坐标标注 ──
-        let font = FontId::monospace(sq_size * 0.26);
+        // 坐标标注（Lichess coords-out 风格：格子外侧边距）
         let files: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        let margin = (board_rect.width() - inner.width()) / 2.0;
+        let font = FontId::monospace(sq_size * 0.16);
 
-        // 下方文件标注 + 左侧行号标注
-        let margin = inner.min.x; // 边距大小
         for i in 0..8u8 {
-            let di = if self.flipped { 7 - i } else { i };
+            let ri = if self.flipped { i } else { 7 - i };
+            let fi = if self.flipped { 7 - i } else { i };
 
-            // 文件标注（a-h）：棋盘下方
-            let fx = inner.min.x + di as f32 * sq_size + sq_size / 2.0 - off.x;
-            let fy = inner.max.y + margin * 0.7 - off.y;
-            p.text(
-                Pos2::new(fx, fy),
-                Align2::CENTER_CENTER,
-                files[i as usize].to_string(),
-                font.clone(),
-                self.colors.label_color,
-            );
-
-            // 行号标注（1-8）：棋盘左侧
-            let rx = margin * 0.5 - off.x;
-            let ry = inner.min.y + (7 - di) as f32 * sq_size + sq_size / 2.0 - off.y;
+            // 行号（1-8）：左侧外边距垂直居中
+            let rx = board_rect.min.x + margin / 2.0 - off.x;
+            let ry = inner.min.y + ri as f32 * sq_size + sq_size / 2.0 - off.y;
             p.text(
                 Pos2::new(rx, ry),
                 Align2::CENTER_CENTER,
                 (i + 1).to_string(),
                 font.clone(),
-                self.colors.label_color,
+                self.colors.coord_light,
+            );
+
+            // 列号（a-h）：底部外边距水平居中
+            let fx = inner.min.x + fi as f32 * sq_size + sq_size / 2.0 - off.x;
+            let fy = inner.max.y + margin / 2.0 - off.y;
+            p.text(
+                Pos2::new(fx, fy),
+                Align2::CENTER_CENTER,
+                files[i as usize].to_string(),
+                font.clone(),
+                self.colors.coord_light,
             );
         }
     }
 
-    // ── 箭头绘制 ────────────────────────────────────────────
+    // 箭头绘制
 
     fn draw_arrow(
         &self,
