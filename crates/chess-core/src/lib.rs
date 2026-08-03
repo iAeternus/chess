@@ -23,6 +23,7 @@ pub use castling::CastlingRights;
 pub use color::Color;
 pub use error::{ChessError, Result};
 pub use game::Game;
+pub use movegen::generate_legal;
 pub use mv::{Move, MoveFlag, Promotion};
 pub use perft::{divide, perft};
 pub use piece::{Piece, PieceKind};
@@ -32,6 +33,6 @@ pub use square::Square;
 #[cfg(feature = "all")]
 pub use fen::{fen2position, position2fen};
 #[cfg(feature = "all")]
-pub use pgn::{from_pgn, to_pgn};
+pub use pgn::{from_pgn, move_to_san, parse_san, to_pgn};
 #[cfg(feature = "all")]
 pub use zobrist::Zobrist;
