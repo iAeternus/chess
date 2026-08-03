@@ -6,6 +6,7 @@
         "halfmove",
         "makemove",
         "movegen",
+        "perft",
         "queenside",
         "RNBQKBNR",
         "startpos",
