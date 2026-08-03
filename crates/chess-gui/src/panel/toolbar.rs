@@ -16,7 +16,9 @@ impl Toolbar {
     }
 
     /// 渲染工具栏并返回用户触发的操作列表
-    pub fn show(&self, ui: &mut egui::Ui) -> Vec<ToolbarAction> {
+    ///
+    /// `replay_mode` — Replay 模式下禁用 New 按钮
+    pub fn show(&self, ui: &mut egui::Ui, replay_mode: bool) -> Vec<ToolbarAction> {
         let mut actions = Vec::new();
 
         ui.horizontal(|ui| {
@@ -29,7 +31,7 @@ impl Toolbar {
                 actions.push(ToolbarAction::FlipBoard);
             }
             if ui
-                .button("✦ New")
+                .add_enabled(!replay_mode, egui::Button::new("✦ New"))
                 .on_hover_text("New Game (N)")
                 .clicked()
             {

@@ -222,10 +222,16 @@ impl GameController {
             return SelectionResult::MoveMade { mv };
         }
 
-        // 无选中棋子
+        // 无选中棋子：检查该棋子是否有合法走法，没有则不可选中
         if piece_at_sq.is_some() && can_select {
-            self.set_selected(sq);
-            return SelectionResult::Selected { square: sq };
+            let has_legal = self
+                .legal_moves_cache
+                .iter()
+                .any(|m| m.from() == sq);
+            if has_legal {
+                self.set_selected(sq);
+                return SelectionResult::Selected { square: sq };
+            }
         }
 
         SelectionResult::Cleared

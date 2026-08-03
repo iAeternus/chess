@@ -136,7 +136,9 @@ impl ChessApp {
             if i.key_pressed(egui::Key::R) {
                 self.board_renderer.flipped = !self.board_renderer.flipped;
             }
-            if i.key_pressed(egui::Key::N) {
+            if i.key_pressed(egui::Key::N)
+                && self.controller.mode() != GameMode::Replay
+            {
                 self.controller.new_game();
             }
         });
@@ -149,7 +151,11 @@ impl ChessApp {
             egui::menu::bar(ui, |ui| {
                 // File
                 ui.menu_button("File", |ui| {
-                    if ui.button("New (N)").clicked() {
+                    let is_replay = self.controller.mode() == GameMode::Replay;
+                    if ui
+                        .add_enabled(!is_replay, egui::Button::new("New (N)"))
+                        .clicked()
+                    {
                         self.controller.new_game();
                         self.drag = None;
                         self.pending_promotion = None;
@@ -284,7 +290,10 @@ impl ChessApp {
                 ui.separator();
 
                 // 工具栏
-                let actions = self.toolbar.show(ui);
+                let actions = self.toolbar.show(
+                    ui,
+                    self.controller.mode() == GameMode::Replay,
+                );
                 for action in actions {
                     match action {
                         ToolbarAction::FlipBoard => {
@@ -416,9 +425,11 @@ impl ChessApp {
                         || p.color == side;
 
                     if can_move {
-                        // 选中棋子（显示合法走法）
-                        self.controller.select_square(sq);
-                        self.drag = Some((p, sq, pos));
+                        // 选中棋子（仅在棋子有合法走法时生效）
+                        let result = self.controller.select_square(sq);
+                        if matches!(result, SelectionResult::Selected { .. }) {
+                            self.drag = Some((p, sq, pos));
+                        }
                     }
                 }
             }
