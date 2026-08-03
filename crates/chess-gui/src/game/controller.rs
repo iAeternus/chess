@@ -258,7 +258,7 @@ impl GameController {
             .collect();
     }
 
-    fn clear_selection(&mut self) {
+    pub fn clear_selection(&mut self) {
         self.selected_square = None;
         self.legal_moves_for_selected.clear();
     }
