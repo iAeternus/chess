@@ -12,3 +12,7 @@ thiserror = "2.0.19"
 [features]
 default = []
 all = []
+
+[[test]]
+name = "test_pgn_replay"
+required-features = ["all"]

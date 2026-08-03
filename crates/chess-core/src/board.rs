@@ -1,6 +1,7 @@
 use crate::{BitBoard, Color, Piece, PieceKind, Square};
 
 /// 棋盘
+#[derive(Clone)]
 pub struct Board {
     pieces: [[BitBoard; 6]; 2],     // pieces[color][piece_kind]
     by_square: [Option<Piece>; 64], // 快速反向查找

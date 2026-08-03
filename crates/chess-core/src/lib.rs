@@ -32,4 +32,6 @@ pub use square::Square;
 #[cfg(feature = "all")]
 pub use fen::{fen2position, position2fen};
 #[cfg(feature = "all")]
+pub use pgn::{from_pgn, to_pgn};
+#[cfg(feature = "all")]
 pub use zobrist::Zobrist;

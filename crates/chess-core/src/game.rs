@@ -10,6 +10,8 @@ use crate::{
 pub struct Game {
     position: Position,
     history: Vec<(Move, Undo)>,
+    /// PGN 头信息，保持插入顺序
+    headers: Vec<(String, String)>,
 }
 
 impl Game {
@@ -18,6 +20,7 @@ impl Game {
         Self {
             position: Position::startpos(),
             history: Vec::new(),
+            headers: Vec::new(),
         }
     }
 
@@ -26,6 +29,7 @@ impl Game {
         Ok(Self {
             position: Position::from_fen(fen)?,
             history: Vec::new(),
+            headers: Vec::new(),
         })
     }
 
@@ -104,6 +108,39 @@ impl Game {
     pub fn reset(&mut self) {
         self.position = Position::startpos();
         self.history.clear();
+    }
+
+    /// 获取所有 PGN 头信息（保持插入顺序）
+    pub fn headers(&self) -> &[(String, String)] {
+        &self.headers
+    }
+
+    /// 大小写不敏感查找头信息值
+    pub fn header(&self, key: &str) -> Option<&str> {
+        let key_lower = key.to_lowercase();
+        self.headers
+            .iter()
+            .find(|(k, _)| k.to_lowercase() == key_lower)
+            .map(|(_, v)| v.as_str())
+    }
+
+    /// 设置头信息（若已存在则更新值，否则追加）
+    pub fn set_header(&mut self, key: &str, value: &str) {
+        let key_lower = key.to_lowercase();
+        if let Some((_, v)) = self
+            .headers
+            .iter_mut()
+            .find(|(k, _)| k.to_lowercase() == key_lower)
+        {
+            *v = value.to_string();
+        } else {
+            self.headers.push((key.to_string(), value.to_string()));
+        }
+    }
+
+    /// 获取对局结果（来自 Result 头信息，默认为 "*"）
+    pub fn result(&self) -> &str {
+        self.header("Result").unwrap_or("*")
     }
 }
 

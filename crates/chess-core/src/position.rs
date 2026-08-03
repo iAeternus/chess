@@ -1,6 +1,7 @@
 use crate::{Board, CastlingRights, Color, Piece, Result, Square, fen, zobrist::Zobrist};
 
 /// 局面
+#[derive(Clone)]
 pub struct Position {
     /// 棋盘状态
     board: Board,
