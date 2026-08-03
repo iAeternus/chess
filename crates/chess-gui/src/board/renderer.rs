@@ -217,11 +217,23 @@ impl BoardRenderer {
             let mid_fade = Color32::from_rgba_premultiplied(200, 0, 0, 120);
             let outer_fade = Color32::from_rgba_premultiplied(180, 0, 0, 40);
 
-            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.95, self.colors.check_glow_outer);
+            p.circle_filled(
+                Pos2::new(cx, cy),
+                sq_size * 0.95,
+                self.colors.check_glow_outer,
+            );
             p.circle_filled(Pos2::new(cx, cy), sq_size * 0.85, outer_fade);
             p.circle_filled(Pos2::new(cx, cy), sq_size * 0.70, mid_fade);
-            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.50, self.colors.check_glow_mid);
-            p.circle_filled(Pos2::new(cx, cy), sq_size * 0.30, self.colors.check_glow_inner);
+            p.circle_filled(
+                Pos2::new(cx, cy),
+                sq_size * 0.50,
+                self.colors.check_glow_mid,
+            );
+            p.circle_filled(
+                Pos2::new(cx, cy),
+                sq_size * 0.30,
+                self.colors.check_glow_inner,
+            );
         }
 
         // 选中高亮
@@ -243,8 +255,8 @@ impl BoardRenderer {
             let cx = c.x - off.x;
             let cy = c.y - off.y;
 
-            let is_capture = state.position.piece_at(tgt).is_some()
-                || mv.flag() == MoveFlag::EnPassant;
+            let is_capture =
+                state.position.piece_at(tgt).is_some() || mv.flag() == MoveFlag::EnPassant;
 
             if is_capture {
                 // 空心圆环

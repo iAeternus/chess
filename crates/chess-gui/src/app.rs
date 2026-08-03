@@ -81,15 +81,9 @@ impl ChessApp {
         if at_end && result != "*" {
             self.status_message = format!("Game over: {result}");
         } else if self.controller.is_check() {
-            self.status_message = format!(
-                "Check! {:?} to move",
-                self.controller.side_to_move()
-            );
+            self.status_message = format!("Check! {:?} to move", self.controller.side_to_move());
         } else {
-            self.status_message = format!(
-                "{:?} to move",
-                self.controller.side_to_move()
-            );
+            self.status_message = format!("{:?} to move", self.controller.side_to_move());
         }
     }
 
@@ -136,9 +130,7 @@ impl ChessApp {
             if i.key_pressed(egui::Key::R) {
                 self.board_renderer.flipped = !self.board_renderer.flipped;
             }
-            if i.key_pressed(egui::Key::N)
-                && self.controller.mode() != GameMode::Replay
-            {
+            if i.key_pressed(egui::Key::N) && self.controller.mode() != GameMode::Replay {
                 self.controller.new_game();
             }
         });
@@ -177,12 +169,8 @@ impl ChessApp {
 
                 // View
                 ui.menu_button("View", |ui| {
-                    if ui
-                        .button("Flip Board (R)")
-                        .clicked()
-                    {
-                        self.board_renderer.flipped =
-                            !self.board_renderer.flipped;
+                    if ui.button("Flip Board (R)").clicked() {
+                        self.board_renderer.flipped = !self.board_renderer.flipped;
                         ui.close_menu();
                     }
                     ui.menu_button("Theme", |ui| {
@@ -191,20 +179,14 @@ impl ChessApp {
                             .clicked()
                         {
                             self.theme.apply_egui_theme(ctx);
-                            self.board_renderer
-                                .set_colors(self.theme.colors());
+                            self.board_renderer.set_colors(self.theme.colors());
                         }
                         if ui
-                            .radio_value(
-                                &mut self.theme,
-                                AppTheme::Light,
-                                "Light",
-                            )
+                            .radio_value(&mut self.theme, AppTheme::Light, "Light")
                             .clicked()
                         {
                             self.theme.apply_egui_theme(ctx);
-                            self.board_renderer
-                                .set_colors(self.theme.colors());
+                            self.board_renderer.set_colors(self.theme.colors());
                         }
                     });
                 });
@@ -212,24 +194,20 @@ impl ChessApp {
                 // Mode
                 ui.menu_button("Mode", |ui| {
                     if ui.button("Human vs Human").clicked() {
-                        self.controller
-                            .set_mode(GameMode::HumanVsHuman, None);
+                        self.controller.set_mode(GameMode::HumanVsHuman, None);
                         self.drag = None;
                         self.pending_promotion = None;
                         ui.close_menu();
                     }
                     if ui.button("Human vs AI").clicked() {
-                        self.controller.set_mode(
-                            GameMode::HumanVsAI,
-                            Some(Box::new(RandomEngine::default())),
-                        );
+                        self.controller
+                            .set_mode(GameMode::HumanVsAI, Some(Box::new(RandomEngine::default())));
                         self.drag = None;
                         self.pending_promotion = None;
                         ui.close_menu();
                     }
                     if ui.button("Analysis").clicked() {
-                        self.controller
-                            .set_mode(GameMode::Analysis, None);
+                        self.controller.set_mode(GameMode::Analysis, None);
                         self.drag = None;
                         self.pending_promotion = None;
                         ui.close_menu();
@@ -265,10 +243,7 @@ impl ChessApp {
 
                 // 引擎信息
                 let engine_info = EngineInfo {
-                    name: self
-                        .controller
-                        .engine_name()
-                        .map(|s| s.to_string()),
+                    name: self.controller.engine_name().map(|s| s.to_string()),
                     ..Default::default()
                 };
                 self.engine_info_panel.show(ui, &engine_info);
@@ -290,15 +265,13 @@ impl ChessApp {
                 ui.separator();
 
                 // 工具栏
-                let actions = self.toolbar.show(
-                    ui,
-                    self.controller.mode() == GameMode::Replay,
-                );
+                let actions = self
+                    .toolbar
+                    .show(ui, self.controller.mode() == GameMode::Replay);
                 for action in actions {
                     match action {
                         ToolbarAction::FlipBoard => {
-                            self.board_renderer.flipped =
-                                !self.board_renderer.flipped
+                            self.board_renderer.flipped = !self.board_renderer.flipped
                         }
                         ToolbarAction::NewGame => self.controller.new_game(),
                         ToolbarAction::OpenPgn => self.open_pgn(),
@@ -358,39 +331,30 @@ impl ChessApp {
 
             // 在精确位置创建子 UI，避免 horizontal layout 的 clip_rect 偏移
             let board_alloc = Rect::from_min_size(board_pos, Vec2::new(side, side));
-            ui.allocate_new_ui(
-                egui::UiBuilder::new().max_rect(board_alloc),
-                |ui| {
-                    let is_replay =
-                        self.controller.mode() == GameMode::Replay;
-                    let sense = if is_replay {
-                        Sense::hover()
-                    } else {
-                        Sense::click_and_drag()
-                    };
+            ui.allocate_new_ui(egui::UiBuilder::new().max_rect(board_alloc), |ui| {
+                let is_replay = self.controller.mode() == GameMode::Replay;
+                let sense = if is_replay {
+                    Sense::hover()
+                } else {
+                    Sense::click_and_drag()
+                };
 
-                    let (response, painter) =
-                        ui.allocate_painter(Vec2::new(side, side), sense);
+                let (response, painter) = ui.allocate_painter(Vec2::new(side, side), sense);
 
-                    // board_rect 来自 egui 实际分配，非手动计算
-                    let board_rect = response.rect;
+                // board_rect 来自 egui 实际分配，非手动计算
+                let board_rect = response.rect;
 
-                    let board_state = self.build_board_state();
+                let board_state = self.build_board_state();
 
-                    // 渲染（使用已分配的 painter）
-                    self.board_renderer.paint(
-                        &painter,
-                        board_rect,
-                        &board_state,
-                        &self.piece_textures,
-                    );
+                // 渲染（使用已分配的 painter）
+                self.board_renderer
+                    .paint(&painter, board_rect, &board_state, &self.piece_textures);
 
-                    // 交互（使用同一个 response，无需额外 ui.interact）
-                    if !is_replay {
-                        self.handle_board_interaction(response, board_rect, ctx);
-                    }
-                },
-            );
+                // 交互（使用同一个 response，无需额外 ui.interact）
+                if !is_replay {
+                    self.handle_board_interaction(response, board_rect, ctx);
+                }
+            });
         });
     }
 
@@ -406,23 +370,12 @@ impl ChessApp {
             && let Some(pos) = response.interact_pointer_pos()
         {
             // pos 是相对于 board_rect 的坐标
-            let abs = Pos2::new(
-                board_rect.min.x + pos.x,
-                board_rect.min.y + pos.y,
-            );
-            if let Some(sq) =
-                self.board_renderer.pos_to_square(board_rect, abs)
-            {
-                let piece = self
-                    .controller
-                    .current_position()
-                    .piece_at(sq);
+            let abs = Pos2::new(board_rect.min.x + pos.x, board_rect.min.y + pos.y);
+            if let Some(sq) = self.board_renderer.pos_to_square(board_rect, abs) {
+                let piece = self.controller.current_position().piece_at(sq);
                 if let Some(p) = piece {
-                    let side =
-                        self.controller.current_position().side_to_move();
-                    let can_move = self.controller.mode()
-                        == GameMode::Analysis
-                        || p.color == side;
+                    let side = self.controller.current_position().side_to_move();
+                    let can_move = self.controller.mode() == GameMode::Analysis || p.color == side;
 
                     if can_move {
                         // 选中棋子（仅在棋子有合法走法时生效）
@@ -448,13 +401,8 @@ impl ChessApp {
         if response.drag_stopped()
             && let Some((_piece, _from, pos)) = self.drag.take()
         {
-            let abs = Pos2::new(
-                board_rect.min.x + pos.x,
-                board_rect.min.y + pos.y,
-            );
-            if let Some(target) =
-                self.board_renderer.pos_to_square(board_rect, abs)
-            {
+            let abs = Pos2::new(board_rect.min.x + pos.x, board_rect.min.y + pos.y);
+            if let Some(target) = self.board_renderer.pos_to_square(board_rect, abs) {
                 self.execute_drag_drop(target);
             } else {
                 self.controller.clear_selection();
@@ -465,13 +413,8 @@ impl ChessApp {
         if response.clicked()
             && let Some(local) = response.interact_pointer_pos()
         {
-            let abs = Pos2::new(
-                board_rect.min.x + local.x,
-                board_rect.min.y + local.y,
-            );
-            if let Some(sq) =
-                self.board_renderer.pos_to_square(board_rect, abs)
-            {
+            let abs = Pos2::new(board_rect.min.x + local.x, board_rect.min.y + local.y);
+            if let Some(sq) = self.board_renderer.pos_to_square(board_rect, abs) {
                 self.execute_click(sq);
             }
         }
@@ -534,12 +477,8 @@ impl ChessApp {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     for (promo, label) in PROMOTION_PIECES {
-                        if ui
-                            .button(*label)
-                            .clicked()
-                        {
-                            self.controller
-                                .complete_promotion(from, to, *promo);
+                        if ui.button(*label).clicked() {
+                            self.controller.complete_promotion(from, to, *promo);
                             self.pending_promotion = None;
                             self.engine_pending = true;
                         }
@@ -571,8 +510,7 @@ impl ChessApp {
                     );
                 }
                 Err(e) => {
-                    self.status_message =
-                        format!("Failed to load PGN: {e}");
+                    self.status_message = format!("Failed to load PGN: {e}");
                 }
             }
         }
@@ -640,4 +578,3 @@ impl eframe::App for ChessApp {
         self.handle_engine(ctx);
     }
 }
-

@@ -26,7 +26,11 @@ pub(crate) static KING_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(|| {
 pub(crate) static PAWN_ATTACKS: LazyLock<[[BitBoard; 64]; 2]> = LazyLock::new(|| {
     let mut white_table = [BitBoard::empty(); 64];
     let mut black_table = [BitBoard::empty(); 64];
-    for (idx, (w_entry, b_entry)) in white_table.iter_mut().zip(black_table.iter_mut()).enumerate() {
+    for (idx, (w_entry, b_entry)) in white_table
+        .iter_mut()
+        .zip(black_table.iter_mut())
+        .enumerate()
+    {
         let sq = Square::new(idx as u32).unwrap();
         *w_entry = generate_pawn_attacks(sq, Color::White);
         *b_entry = generate_pawn_attacks(sq, Color::Black);

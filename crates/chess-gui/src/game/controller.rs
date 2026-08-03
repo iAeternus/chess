@@ -107,8 +107,7 @@ impl GameController {
     /// 从 PGN 字符串加载对局（自动进入 Replay 模式）
     pub fn from_pgn(pgn: &str) -> Result<Self> {
         let mut game = chess_core::from_pgn(pgn)?;
-        let move_history: Vec<Move> =
-            game.history().iter().map(|(mv, _)| *mv).collect();
+        let move_history: Vec<Move> = game.history().iter().map(|(mv, _)| *mv).collect();
 
         // 撤销所有走法回到初始局面（保留 PGN headers）
         while !game.history().is_empty() {
@@ -180,8 +179,8 @@ impl GameController {
         let side_to_move = position.side_to_move();
 
         // 分析模式下可以移动任意一方的棋子；其他模式下只能移动当前方
-        let can_select = self.mode == GameMode::Analysis
-            || piece_at_sq.is_some_and(|p| p.color == side_to_move);
+        let can_select =
+            self.mode == GameMode::Analysis || piece_at_sq.is_some_and(|p| p.color == side_to_move);
 
         if let Some(selected) = self.selected_square {
             // 已有选中棋子
@@ -224,10 +223,7 @@ impl GameController {
 
         // 无选中棋子：检查该棋子是否有合法走法，没有则不可选中
         if piece_at_sq.is_some() && can_select {
-            let has_legal = self
-                .legal_moves_cache
-                .iter()
-                .any(|m| m.from() == sq);
+            let has_legal = self.legal_moves_cache.iter().any(|m| m.from() == sq);
             if has_legal {
                 self.set_selected(sq);
                 return SelectionResult::Selected { square: sq };
@@ -264,9 +260,7 @@ impl GameController {
         let mv = self
             .legal_moves_cache
             .iter()
-            .find(|m| {
-                m.from() == from && m.to() == to && m.promotion() == promotion
-            })
+            .find(|m| m.from() == from && m.to() == to && m.promotion() == promotion)
             .copied();
 
         if let Some(mv) = mv {
@@ -355,8 +349,7 @@ impl GameController {
                 Ok(san) => self.san_cache.push(san),
                 Err(_) => {
                     // 回退到坐标表示
-                    self.san_cache
-                        .push(format!("{}{}", mv.from(), mv.to()));
+                    self.san_cache.push(format!("{}{}", mv.from(), mv.to()));
                 }
             }
             game.play(*mv).ok();

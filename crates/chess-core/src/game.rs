@@ -63,10 +63,7 @@ impl Game {
 
     /// 撤销上一步走法
     pub fn undo(&mut self) -> Result<()> {
-        let (_, undo) = self
-            .history
-            .pop()
-            .ok_or(ChessError::NothingToUndo)?;
+        let (_, undo) = self.history.pop().ok_or(ChessError::NothingToUndo)?;
 
         unmake_move(&mut self.position, undo);
 
@@ -88,11 +85,7 @@ impl Game {
             .lsb()
             .ok_or(ChessError::NoKing(side))?;
 
-        Ok(is_square_attacked(
-            self.position.board(),
-            king,
-            side.flip(),
-        ))
+        Ok(is_square_attacked(self.position.board(), king, side.flip()))
     }
 
     /// 检测是否将杀

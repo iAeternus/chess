@@ -152,16 +152,10 @@ impl PieceTextureManager {
         resvg::render(&tree, transform, &mut pixmap.as_mut());
 
         // 转换为 egui::ColorImage
-        let image = egui::ColorImage::from_rgba_unmultiplied(
-            [size as usize, size as usize],
-            pixmap.data(),
-        );
+        let image =
+            egui::ColorImage::from_rgba_unmultiplied([size as usize, size as usize], pixmap.data());
 
         // 加载为纹理
-        ctx.load_texture(
-            name.to_string(),
-            image,
-            TextureOptions::LINEAR,
-        )
+        ctx.load_texture(name.to_string(), image, TextureOptions::LINEAR)
     }
 }

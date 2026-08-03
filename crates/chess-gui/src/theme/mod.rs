@@ -73,9 +73,9 @@ impl AppTheme {
                 coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
                 // Lichess 风格将军光晕：中心亮红 → 边缘完全透明
-                check_glow_inner: Color32::from_rgb(255, 0, 0),          // 0%: 实心亮红
-                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200),  // 25%: 暗红半透明
-                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0),  // 89%: 完全透明
+                check_glow_inner: Color32::from_rgb(255, 0, 0), // 0%: 实心亮红
+                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200), // 25%: 暗红半透明
+                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0), // 89%: 完全透明
 
                 selected_highlight: Color32::from_rgba_premultiplied(100, 180, 100, 140),
                 legal_move_dot: Color32::from_rgba_premultiplied(0, 0, 0, 50),
@@ -98,9 +98,9 @@ impl AppTheme {
                 coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
                 // Lichess 风格将军光晕：中心亮红 → 边缘完全透明
-                check_glow_inner: Color32::from_rgb(255, 0, 0),          // 0%: 实心亮红
-                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200),  // 25%: 暗红半透明
-                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0),  // 89%: 完全透明
+                check_glow_inner: Color32::from_rgb(255, 0, 0), // 0%: 实心亮红
+                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200), // 25%: 暗红半透明
+                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0), // 89%: 完全透明
 
                 selected_highlight: Color32::from_rgba_premultiplied(100, 180, 100, 140),
                 legal_move_dot: Color32::from_rgba_premultiplied(0, 0, 0, 40),
@@ -128,10 +128,7 @@ impl AppTheme {
         visuals.override_text_color = Some(colors.text);
 
         let (wi, wh) = match self {
-            Self::Dark => (
-                Color32::from_rgb(55, 55, 60),
-                Color32::from_rgb(70, 70, 78),
-            ),
+            Self::Dark => (Color32::from_rgb(55, 55, 60), Color32::from_rgb(70, 70, 78)),
             Self::Light => (
                 Color32::from_rgb(215, 215, 220),
                 Color32::from_rgb(195, 195, 205),

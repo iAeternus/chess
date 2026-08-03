@@ -32,11 +32,7 @@ impl EngineInfoPanel {
 
         // 引擎名称
         if let Some(ref name) = info.name {
-            ui.label(
-                egui::RichText::new(format!("{name}"))
-                    .size(15.0)
-                    .strong(),
-            );
+            ui.label(egui::RichText::new(format!("{name}")).size(15.0).strong());
         } else {
             ui.label(
                 egui::RichText::new("No engine loaded")
@@ -67,11 +63,7 @@ impl EngineInfoPanel {
                 _ => unreachable!(),
             };
             ui.vertical_centered(|ui| {
-                ui.label(
-                    egui::RichText::new(&eval_text)
-                        .size(24.0)
-                        .strong(),
-                );
+                ui.label(egui::RichText::new(&eval_text).size(24.0).strong());
             });
         }
 
