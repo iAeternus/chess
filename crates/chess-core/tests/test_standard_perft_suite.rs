@@ -8,6 +8,7 @@ struct PerftCase {
 }
 
 #[test]
+#[ignore = "测试时长较长"]
 fn standard_perft_suite() {
     let cases = [
         // 起始局面

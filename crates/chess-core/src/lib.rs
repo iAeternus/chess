@@ -11,6 +11,7 @@ mod makemove;
 mod movegen;
 mod mv;
 mod perft;
+mod pgn;
 mod piece;
 mod position;
 mod square;

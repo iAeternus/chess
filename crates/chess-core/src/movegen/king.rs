@@ -1,8 +1,7 @@
 use arrayvec::ArrayVec;
 
 use crate::{
-    Board, CastlingRights, Color, Move, MoveFlag, PieceKind, Position, Square,
-    attack::KING_ATTACKS,
+    Board, CastlingRights, Color, Move, MoveFlag, PieceKind, Position, Square, attack::KING_ATTACKS,
 };
 
 pub(crate) fn generate(position: &Position, color: Color, moves: &mut ArrayVec<Move, 256>) {
