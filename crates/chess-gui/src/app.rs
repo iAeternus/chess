@@ -310,9 +310,8 @@ impl ChessApp {
     fn show_board(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             let available = ui.available_size();
-
-            // 取较小维度作为基准，不强制放大（防止窗口缩小时溢出）
             let max_side = available.x.min(available.y);
+
             const MIN_BOARD_SIDE: f32 = 400.0;
             let side = if max_side < MIN_BOARD_SIDE {
                 max_side
@@ -320,41 +319,27 @@ impl ChessApp {
                 max_side * self.board_renderer.board_scale()
             };
 
-            // 棋盘在 available 区域内居中
-            let board_pos = Pos2::new(
-                ui.cursor().min.x + (available.x - side) / 2.0,
-                ui.cursor().min.y + (available.y - side) / 2.0,
-            );
+            // 垂直居中（水平方向由 egui 垂直布局自然放置到左侧，避免 clip_rect 偏移）
+            let y_pad = ((available.y - side) / 2.0).max(0.0);
+            ui.add_space(y_pad);
 
-            // 在父布局中占位
-            ui.allocate_space(Vec2::new(available.x, available.y));
+            let is_replay = self.controller.mode() == GameMode::Replay;
+            let sense = if is_replay {
+                Sense::hover()
+            } else {
+                Sense::click_and_drag()
+            };
 
-            // 在精确位置创建子 UI，避免 horizontal layout 的 clip_rect 偏移
-            let board_alloc = Rect::from_min_size(board_pos, Vec2::new(side, side));
-            ui.allocate_new_ui(egui::UiBuilder::new().max_rect(board_alloc), |ui| {
-                let is_replay = self.controller.mode() == GameMode::Replay;
-                let sense = if is_replay {
-                    Sense::hover()
-                } else {
-                    Sense::click_and_drag()
-                };
+            let (response, painter) = ui.allocate_painter(Vec2::new(side, side), sense);
+            let board_rect = response.rect;
 
-                let (response, painter) = ui.allocate_painter(Vec2::new(side, side), sense);
+            let board_state = self.build_board_state();
 
-                // board_rect 来自 egui 实际分配，非手动计算
-                let board_rect = response.rect;
+            self.board_renderer.paint(&painter, board_rect, &board_state, &self.piece_textures);
 
-                let board_state = self.build_board_state();
-
-                // 渲染（使用已分配的 painter）
-                self.board_renderer
-                    .paint(&painter, board_rect, &board_state, &self.piece_textures);
-
-                // 交互（使用同一个 response，无需额外 ui.interact）
-                if !is_replay {
-                    self.handle_board_interaction(response, board_rect, ctx);
-                }
-            });
+            if !is_replay {
+                self.handle_board_interaction(response, board_rect, ctx);
+            }
         });
     }
 

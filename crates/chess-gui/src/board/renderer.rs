@@ -19,19 +19,10 @@ const BOARD_SCALE: f32 = 0.95;
 /// 坐标外边距的等效格子数（coords-out 模式下总外边距）
 const COORD_MARGIN: f32 = 0.5;
 
-/// 坐标标注显示模式
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CoordMode {
-    /// 坐标在棋盘格子外侧（Lichess 默认），带外边距防止裁切
-    Outside,
-}
-
 pub struct BoardRenderer {
     /// 是否翻转棋盘（黑方视角）
     pub flipped: bool,
     colors: ThemeColors,
-    #[allow(dead_code)]
-    coord_mode: CoordMode,
 }
 
 impl BoardRenderer {
@@ -39,7 +30,6 @@ impl BoardRenderer {
         Self {
             flipped: false,
             colors,
-            coord_mode: CoordMode::Outside,
         }
     }
 

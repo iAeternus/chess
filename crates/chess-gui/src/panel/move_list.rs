@@ -1,7 +1,7 @@
 //! 走法列表面板：顶部导航按钮 + SAN 格式走法表格。
 
 use chess_core::Move;
-use egui::{Color32, ScrollArea};
+use egui::{Color32, Label, ScrollArea, Sense};
 
 /// 走法列表操作
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,6 +14,11 @@ pub enum MoveListAction {
     GoForward,
     GoToEnd,
 }
+
+/// 当前走法高亮背景色
+const HIGHLIGHT_BG: Color32 = Color32::from_rgba_premultiplied(100, 150, 255, 60);
+/// 走法编号颜色
+const DIM_COLOR: Color32 = Color32::from_rgb(130, 130, 130);
 
 pub struct MoveListPanel;
 
@@ -77,14 +82,18 @@ impl MoveListPanel {
             return;
         }
 
+        // 计算可用宽度用于表格列
+        let table_width = ui.available_width();
+
         ScrollArea::vertical()
             .max_height(max_height)
             .auto_shrink([false, true])
             .stick_to_bottom(true)
             .show(ui, |ui| {
+                ui.set_width(table_width);
+
                 egui::Grid::new("move_list_grid")
                     .striped(true)
-                    .min_col_width(20.0)
                     .show(ui, |ui| {
                         let total_full_moves = moves.len().div_ceil(2);
 
@@ -95,19 +104,21 @@ impl MoveListPanel {
                             // 走法编号
                             ui.label(
                                 egui::RichText::new(format!("{move_num}."))
-                                    .color(Color32::from_rgb(130, 130, 130))
+                                    .color(DIM_COLOR)
                                     .size(14.0),
                             );
 
                             // 白方走法
-                            let w_ply = white_idx + 1;
-                            let w_san = san_list
-                                .get(white_idx)
-                                .cloned()
-                                .unwrap_or_else(|| format_move(moves[white_idx]));
-                            let w_is_current = current_ply == w_ply;
-                            if self.move_button(ui, &w_san, w_is_current) {
-                                on_action(MoveListAction::JumpToPly(w_ply));
+                            {
+                                let w_ply = white_idx + 1;
+                                let w_san = san_list
+                                    .get(white_idx)
+                                    .cloned()
+                                    .unwrap_or_else(|| format_move(moves[white_idx]));
+                                let w_is_current = current_ply == w_ply;
+                                if self.move_cell(ui, &w_san, w_is_current) {
+                                    on_action(MoveListAction::JumpToPly(w_ply));
+                                }
                             }
 
                             // 黑方走法
@@ -118,9 +129,12 @@ impl MoveListPanel {
                                     .cloned()
                                     .unwrap_or_else(|| format_move(moves[black_idx]));
                                 let b_is_current = current_ply == b_ply;
-                                if self.move_button(ui, &b_san, b_is_current) {
+                                if self.move_cell(ui, &b_san, b_is_current) {
                                     on_action(MoveListAction::JumpToPly(b_ply));
                                 }
+                            } else {
+                                // 空占位，保持表格对齐
+                                ui.label("");
                             }
 
                             ui.end_row();
@@ -129,17 +143,27 @@ impl MoveListPanel {
             });
     }
 
-    fn move_button(&self, ui: &mut egui::Ui, san: &str, is_current: bool) -> bool {
+    /// 渲染单个走法单元格（平面 clickable label，无按钮边框）
+    fn move_cell(&self, ui: &mut egui::Ui, san: &str, is_current: bool) -> bool {
         let text = if is_current {
-            egui::RichText::new(san)
-                .color(Color32::from_rgb(255, 255, 100))
-                .strong()
-                .size(16.0)
+            egui::RichText::new(san).strong().size(16.0)
         } else {
             egui::RichText::new(san).size(16.0)
         };
 
-        ui.button(text).clicked()
+        // 当前走法用 Frame + fill 显示背景高亮；其余走法为纯 label
+        if is_current {
+            let response = egui::Frame::NONE
+                .fill(HIGHLIGHT_BG)
+                .show(ui, |ui| {
+                    ui.add(Label::new(text).sense(Sense::click()))
+                });
+            // Frame::show 返回 InnerResponse { inner: Response, response: Response }
+            // inner 是 Label 的 response
+            response.inner.clicked()
+        } else {
+            ui.add(Label::new(text).sense(Sense::click())).clicked()
+        }
     }
 }
 
