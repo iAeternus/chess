@@ -188,4 +188,12 @@ mod tests {
 
         assert_eq!(board.king_square(Color::Black), sq);
     }
+
+    #[test]
+    fn test_board_remove_consistency() {
+        let mut board = Board::default();
+        board.add_piece(Square::E4, Piece::new(Color::White, PieceKind::Pawn));
+        board.remove_piece(Square::E4);
+        assert!(board.piece_at(Square::E4).is_none());
+    }
 }

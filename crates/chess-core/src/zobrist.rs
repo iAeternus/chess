@@ -89,16 +89,11 @@ impl Zobrist {
     }
 
     /// 棋子键值，用于增量更新
-    /// 删除棋子:  hash ^= piece_key(piece, from)
-    /// 添加棋子: hash ^= piece_key(piece, to)
     pub fn piece_key(piece: Piece, sq: Square) -> u64 {
         TABLE.piece[piece.color as usize][piece.kind as usize][sq.index()]
     }
 
     /// 王车易位键值
-    /// 更新:
-    /// hash ^= old_castling
-    /// hash ^= new_castling
     pub fn castling_key(castling: CastlingRights) -> u64 {
         TABLE.castling[castling.bits() as usize]
     }
@@ -114,9 +109,41 @@ impl Zobrist {
     }
 
     /// 走子方键值，黑方回合 XOR 常数
-    /// 每次换边: hash ^= side_key()
     pub fn side_key() -> u64 {
         TABLE.side_to_move
+    }
+
+    /// 移动棋子
+    pub fn update_piece(hash: &mut u64, piece: Piece, from: Square, to: Square) {
+        *hash ^= Self::piece_key(piece, from);
+        *hash ^= Self::piece_key(piece, to);
+    }
+
+    /// 删除棋子
+    pub fn update_remove(hash: &mut u64, piece: Piece, square: Square) {
+        *hash ^= Self::piece_key(piece, square);
+    }
+
+    /// 添加棋子
+    pub fn update_add(hash: &mut u64, piece: Piece, square: Square) {
+        *hash ^= Self::piece_key(piece, square);
+    }
+
+    /// 更新走子方
+    pub fn update_side(hash: &mut u64) {
+        *hash ^= Self::side_key();
+    }
+
+    /// 更新王车易位权限
+    pub fn update_castling(hash: &mut u64, old: CastlingRights, new: CastlingRights) {
+        *hash ^= Self::castling_key(old);
+        *hash ^= Self::castling_key(new);
+    }
+
+    /// 更新ep
+    pub fn update_en_passant(hash: &mut u64, old: Option<Square>, new: Option<Square>) {
+        *hash ^= Self::en_passant_key(old);
+        *hash ^= Self::en_passant_key(new);
     }
 
     /// 重新计算完整局面 Hash
