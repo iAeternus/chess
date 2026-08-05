@@ -44,8 +44,6 @@ impl TryFrom<u8> for MoveFlag {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum Promotion {
-    /// 不升变
-    None = 0,
     /// 升变为马
     Knight = 1,
     /// 升变为象
@@ -61,7 +59,6 @@ impl TryFrom<u8> for Promotion {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::None),
             1 => Ok(Self::Knight),
             2 => Ok(Self::Bishop),
             3 => Ok(Self::Rook),
@@ -71,14 +68,13 @@ impl TryFrom<u8> for Promotion {
     }
 }
 
-impl From<Promotion> for Option<PieceKind> {
+impl From<Promotion> for PieceKind {
     fn from(value: Promotion) -> Self {
         match value {
-            Promotion::Knight => Some(PieceKind::Knight),
-            Promotion::Bishop => Some(PieceKind::Bishop),
-            Promotion::Rook => Some(PieceKind::Rook),
-            Promotion::Queen => Some(PieceKind::Queen),
-            Promotion::None => None,
+            Promotion::Knight => PieceKind::Knight,
+            Promotion::Bishop => PieceKind::Bishop,
+            Promotion::Rook => PieceKind::Rook,
+            Promotion::Queen => PieceKind::Queen,
         }
     }
 }
@@ -150,13 +146,17 @@ impl Move {
     /// 获取走法类型
     pub fn flag(&self) -> MoveFlag {
         let value = ((self.0 >> Self::FLAG_SHIFT) & Self::FLAG_MASK) as u8;
-        MoveFlag::try_from(value).expect("invalid move flag") // SAFETY: value in range [0000,1111]
+        MoveFlag::try_from(value).expect("invalid move flag") // SAFETY: value in range [0,8]
     }
 
     /// 获取升变类型
-    pub fn promotion(&self) -> Promotion {
+    pub fn promotion(&self) -> Option<Promotion> {
         let value = ((self.0 >> Self::PROMOTION_SHIFT) & Self::PROMOTION_MASK) as u8;
-        Promotion::try_from(value).expect("invalid promotion") // SAFETY: value in range [0000,1111]
+        if value == 0 {
+            None
+        } else {
+            Some(Promotion::try_from(value).expect("invalid promotion")) // SAFETY: value in range [1,4]
+        }
     }
 
     /// 是否吃子
@@ -166,9 +166,10 @@ impl Move {
             MoveFlag::Capture | MoveFlag::EnPassant | MoveFlag::PromotionCapture,
         )
     }
+
     /// 是否升变
     pub fn is_promotion(&self) -> bool {
-        self.promotion() != Promotion::None
+        self.promotion().is_some()
     }
 
     /// 是否王车易位
@@ -198,7 +199,7 @@ mod tests {
         assert_eq!(mv.from(), Square::E2);
         assert_eq!(mv.to(), Square::E4);
         assert_eq!(mv.flag(), MoveFlag::DoublePawnPush);
-        assert_eq!(mv.promotion(), Promotion::None);
+        assert_eq!(mv.promotion(), None);
     }
 
     #[test]
@@ -217,7 +218,7 @@ mod tests {
 
         assert_eq!(mv.flag(), MoveFlag::Capture);
         assert!(mv.is_capture());
-        assert!(!mv.is_promotion());
+        assert!(mv.promotion().is_none());
     }
 
     #[test]
@@ -237,8 +238,7 @@ mod tests {
         let mv = Move::new_promotion(Square::E7, Square::E8, Promotion::Queen, false);
 
         assert_eq!(mv.flag(), MoveFlag::Promotion);
-        assert!(mv.is_promotion());
-        assert_eq!(mv.promotion(), Promotion::Queen);
+        assert_eq!(mv.promotion().unwrap(), Promotion::Queen);
         assert!(!mv.is_capture());
     }
 
@@ -248,8 +248,7 @@ mod tests {
 
         assert_eq!(mv.flag(), MoveFlag::PromotionCapture);
         assert!(mv.is_capture());
-        assert!(mv.is_promotion());
-        assert_eq!(mv.promotion(), Promotion::Queen);
+        assert_eq!(mv.promotion().unwrap(), Promotion::Queen);
     }
 
     #[test]
@@ -263,8 +262,7 @@ mod tests {
 
         for promotion in promotions {
             let mv = Move::new_promotion(Square::A7, Square::A8, promotion, false);
-            assert!(mv.is_promotion());
-            assert_eq!(mv.promotion(), promotion);
+            assert_eq!(mv.promotion().unwrap(), promotion);
         }
     }
 

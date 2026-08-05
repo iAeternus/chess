@@ -207,8 +207,7 @@ impl GameController {
             }
 
             // 检查是否需要升变选择
-            let has_promotion = matching.iter().any(|m| m.is_promotion());
-            if has_promotion && matching.len() > 1 {
+            if matching.iter().any(|m| m.is_promotion()) {
                 return SelectionResult::NeedsPromotion {
                     from: selected,
                     to: sq,
@@ -260,7 +259,7 @@ impl GameController {
         let mv = self
             .legal_moves_cache
             .iter()
-            .find(|m| m.from() == from && m.to() == to && m.promotion() == promotion)
+            .find(|m| m.from() == from && m.to() == to && m.promotion() == Some(promotion))
             .copied();
 
         if let Some(mv) = mv {

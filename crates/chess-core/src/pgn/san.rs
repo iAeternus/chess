@@ -113,8 +113,7 @@ pub fn parse_san(position: &Position, san: &str) -> Result<Move> {
             }
 
             // 匹配升变
-            let expected_promo = promotion.unwrap_or(Promotion::None);
-            if mv.promotion() != expected_promo {
+            if mv.promotion() != promotion {
                 return false;
             }
 
@@ -201,9 +200,9 @@ pub fn move_to_san(position: &Position, mv: Move) -> Result<String> {
         // 目标格
         result.push_str(&format_square(mv.to()));
         // 升变
-        if mv.is_promotion() {
+        if let Some(promotion) = mv.promotion() {
             result.push('=');
-            result.push(promotion_to_char(mv.promotion()));
+            result.push(promotion_to_char(promotion));
         }
     } else {
         // 非兵走法
@@ -349,7 +348,6 @@ fn promotion_to_char(promo: Promotion) -> char {
         Promotion::Rook => 'R',
         Promotion::Bishop => 'B',
         Promotion::Knight => 'N',
-        Promotion::None => '?',
     }
 }
 
@@ -449,7 +447,7 @@ mod tests {
         let mv = parse_san(&pos, "e8=Q").unwrap();
         assert_eq!(mv.from(), Square::E7);
         assert_eq!(mv.to(), Square::E8);
-        assert_eq!(mv.promotion(), Promotion::Queen);
+        assert_eq!(mv.promotion().unwrap(), Promotion::Queen);
     }
 
     #[test]
@@ -459,7 +457,7 @@ mod tests {
         let mv = parse_san(&pos, "dxe8=Q").unwrap();
         assert_eq!(mv.from(), Square::D7);
         assert_eq!(mv.to(), Square::E8);
-        assert_eq!(mv.promotion(), Promotion::Queen);
+        assert_eq!(mv.promotion().unwrap(), Promotion::Queen);
         assert!(mv.is_capture());
     }
 

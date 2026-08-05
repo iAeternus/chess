@@ -150,7 +150,10 @@ fn promote(position: &mut Position, mv: Move, capture: bool, hash: &mut u64) {
     if let Some(captured) = position.piece_at(mv.to()) {
         Zobrist::update_remove(hash, captured, mv.to());
     }
-    let promoted_kind = Option::<PieceKind>::from(mv.promotion()).expect("invalid promotion");
+    let promoted_kind = mv
+        .promotion()
+        .expect("promotion move without promotion piece")
+        .into();
     let promoted = Piece::new(pawn.color, promoted_kind);
     Zobrist::update_add(hash, promoted, mv.to());
 

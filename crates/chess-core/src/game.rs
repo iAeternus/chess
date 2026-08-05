@@ -227,8 +227,10 @@ mod tests {
 
             game.play(mv).unwrap();
 
-            let promoted_kind =
-                Option::<PieceKind>::from(mv.promotion()).expect("invalid promotion");
+            let promoted_kind = mv
+                .promotion()
+                .expect("promotion move without promotion piece")
+                .into();
             assert_eq!(
                 game.position().piece_at(Square::E8).unwrap().kind,
                 promoted_kind

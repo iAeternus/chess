@@ -221,7 +221,7 @@ mod tests {
             assert!(moves.iter().any(|m| m.from() == Square::E7
                 && m.to() == Square::D8
                 && m.flag() == MoveFlag::PromotionCapture
-                && m.promotion() == promotion));
+                && m.promotion().unwrap() == promotion));
         }
 
         // 前进升变
@@ -234,7 +234,7 @@ mod tests {
             assert!(moves.iter().any(|m| m.from() == Square::E7
                 && m.to() == Square::E8
                 && m.flag() == MoveFlag::Promotion
-                && m.promotion() == promotion));
+                && m.promotion().unwrap() == promotion));
         }
     }
 
