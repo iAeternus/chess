@@ -4,11 +4,13 @@
 
 use chess_ai::RandomEngine;
 use chess_core::{Piece, Promotion, Square};
-use egui::{Align2, Pos2, Rect, Sense, Vec2};
+use egui::{Align2, Pos2, Sense};
 
+use crate::board::interaction;
 use crate::board::renderer::BoardRenderer;
 use crate::board::state::BoardState;
-use crate::game::controller::{GameController, GameMode, SelectionResult};
+use crate::board::widget::BoardWidget;
+use crate::game::controller::{GameController, GameMode};
 use crate::panel::engine_info::{EngineInfo, EngineInfoPanel};
 use crate::panel::move_list::{MoveListAction, MoveListPanel};
 use crate::panel::toolbar::{Toolbar, ToolbarAction};
@@ -37,6 +39,9 @@ pub struct ChessApp {
     // 状态
     status_message: String,
 
+    // 棋盘翻转（黑方视角）
+    flipped: bool,
+
     // 拖拽：(棋子, 来源格, painter-local 鼠标位置)
     drag: Option<(Piece, Square, Pos2)>,
 
@@ -62,6 +67,7 @@ impl ChessApp {
             engine_info_panel: EngineInfoPanel::new(),
             toolbar: Toolbar::new(),
             status_message: String::from("White to move"),
+            flipped: false,
             drag: None,
             pending_promotion: None,
         }
@@ -124,7 +130,7 @@ impl ChessApp {
                 self.controller.go_to_end();
             }
             if i.key_pressed(egui::Key::R) {
-                self.board_renderer.flipped = !self.board_renderer.flipped;
+                self.flipped = !self.flipped;
             }
             if i.key_pressed(egui::Key::N) && self.controller.mode() != GameMode::Replay {
                 self.controller.new_game();
@@ -166,7 +172,7 @@ impl ChessApp {
                 // View
                 ui.menu_button("View", |ui| {
                     if ui.button("Flip Board (R)").clicked() {
-                        self.board_renderer.flipped = !self.board_renderer.flipped;
+                        self.flipped = !self.flipped;
                         ui.close_menu();
                     }
                     ui.menu_button("Theme", |ui| {
@@ -267,7 +273,7 @@ impl ChessApp {
                 for action in actions {
                     match action {
                         ToolbarAction::FlipBoard => {
-                            self.board_renderer.flipped = !self.board_renderer.flipped
+                            self.flipped = !self.flipped
                         }
                         ToolbarAction::NewGame => self.controller.new_game(),
                         ToolbarAction::OpenPgn => self.open_pgn(),
@@ -305,137 +311,39 @@ impl ChessApp {
 
     fn show_board(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let available = ui.available_size();
-            let max_side = available.x.min(available.y);
-
-            const MIN_BOARD_SIDE: f32 = 400.0;
-            let side = if max_side < MIN_BOARD_SIDE {
-                max_side
-            } else {
-                max_side * self.board_renderer.board_scale()
-            };
-
-            // 垂直居中（水平方向由 egui 垂直布局自然放置到左侧，避免 clip_rect 偏移）
-            let y_pad = ((available.y - side) / 2.0).max(0.0);
-            ui.add_space(y_pad);
-
-            let is_replay = self.controller.mode() == GameMode::Replay;
+            let mode = self.controller.mode();
+            let is_replay = mode == GameMode::Replay;
             let sense = if is_replay {
                 Sense::hover()
             } else {
                 Sense::click_and_drag()
             };
 
-            let (response, painter) = ui.allocate_painter(Vec2::new(side, side), sense);
-            let board_rect = response.rect;
-
             let board_state = self.build_board_state();
 
-            self.board_renderer
-                .paint(&painter, board_rect, &board_state, &self.piece_textures);
+            let board = BoardWidget {
+                renderer: &self.board_renderer,
+                textures: &self.piece_textures,
+                state: &board_state,
+                flipped: self.flipped,
+                sense,
+            }
+            .show(ui);
 
-            if !is_replay {
-                self.handle_board_interaction(response, board_rect, ctx);
+            if !is_replay
+                && let Some(promotion) = interaction::handle_interaction(
+                    &board.response,
+                    &board.layout,
+                    &mut self.controller,
+                    &mut self.drag,
+                    ctx,
+                    mode,
+                    self.flipped,
+                )
+            {
+                self.pending_promotion = Some(promotion);
             }
         });
-    }
-
-    /// 处理棋盘上的点击/拖拽事件
-    fn handle_board_interaction(
-        &mut self,
-        response: egui::Response,
-        board_rect: Rect,
-        ctx: &egui::Context,
-    ) {
-        // 拖拽开始
-        if response.drag_started()
-            && let Some(pos) = response.interact_pointer_pos()
-        {
-            // pos 是相对于 board_rect 的坐标
-            let abs = Pos2::new(board_rect.min.x + pos.x, board_rect.min.y + pos.y);
-            if let Some(sq) = self.board_renderer.pos_to_square(board_rect, abs) {
-                let piece = self.controller.current_position().piece_at(sq);
-                if let Some(p) = piece {
-                    let side = self.controller.current_position().side_to_move();
-                    let can_move = self.controller.mode() == GameMode::Analysis || p.color == side;
-
-                    if can_move {
-                        // 选中棋子（仅在棋子有合法走法时生效）
-                        let result = self.controller.select_square(sq);
-                        if matches!(result, SelectionResult::Selected { .. }) {
-                            self.drag = Some((p, sq, pos));
-                        }
-                    }
-                }
-            }
-        }
-
-        // 拖拽移动
-        if response.dragged()
-            && let Some(pos) = response.interact_pointer_pos()
-            && let Some((_piece, _from, ref mut drag_pos)) = self.drag
-        {
-            *drag_pos = pos;
-            ctx.request_repaint();
-        }
-
-        // 拖拽释放
-        if response.drag_stopped()
-            && let Some((_piece, _from, pos)) = self.drag.take()
-        {
-            let abs = Pos2::new(board_rect.min.x + pos.x, board_rect.min.y + pos.y);
-            if let Some(target) = self.board_renderer.pos_to_square(board_rect, abs) {
-                self.execute_drag_drop(target);
-            } else {
-                self.controller.clear_selection();
-            }
-        }
-
-        // 点击
-        if response.clicked()
-            && let Some(local) = response.interact_pointer_pos()
-        {
-            let abs = Pos2::new(board_rect.min.x + local.x, board_rect.min.y + local.y);
-            if let Some(sq) = self.board_renderer.pos_to_square(board_rect, abs) {
-                self.execute_click(sq);
-            }
-        }
-    }
-
-    /// 执行拖拽释放
-    fn execute_drag_drop(&mut self, target: Square) {
-        let legal_moves = self.controller.legal_moves_for_selected();
-        let matching: Vec<_> = legal_moves
-            .iter()
-            .filter(|m| m.to() == target)
-            .copied()
-            .collect();
-
-        if matching.is_empty() {
-            self.controller.clear_selection();
-            return;
-        }
-
-        // 检查是否需要升变选择
-        let has_promotion = matching.iter().any(|m| m.is_promotion());
-        if has_promotion && matching.len() > 1 {
-            let from = matching[0].from();
-            self.pending_promotion = Some((from, target));
-            return;
-        }
-
-        // 直接执行
-        self.controller.make_move(matching[0]);
-    }
-
-    /// 执行点击
-    fn execute_click(&mut self, sq: Square) {
-        match self.controller.select_square(sq) {
-            SelectionResult::NeedsPromotion { from, to } => {
-                self.pending_promotion = Some((from, to));
-            }
-            _ => {}
-        }
     }
 
     // 升变弹窗
@@ -475,7 +383,7 @@ impl ChessApp {
             match GameController::from_pgn(&content) {
                 Ok(controller) => {
                     self.controller = controller;
-                    self.board_renderer.flipped = false;
+                    self.flipped = false;
                     self.drag = None;
                     self.pending_promotion = None;
                     self.status_message = format!(

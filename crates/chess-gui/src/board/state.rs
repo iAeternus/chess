@@ -1,4 +1,4 @@
-//! 棋盘渲染状态：封装渲染器所需的全部视觉信息。
+//! 棋盘渲染状态：封装渲染器所需的全部视觉信息
 
 use arrayvec::ArrayVec;
 use chess_core::{Move, Piece, Position, Square};
@@ -14,7 +14,7 @@ pub struct BoardArrow {
 
 /// 棋盘渲染所需的完整状态
 ///
-/// 由 `GameController` 提供数据，`ChessApp` 组装后传给 `BoardRenderer`。
+/// 由 `GameController` 提供数据，`ChessApp` 组装后传给 `BoardRenderer`
 pub struct BoardState {
     /// 当前局面
     pub position: Position,
