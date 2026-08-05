@@ -42,9 +42,6 @@ pub struct ChessApp {
 
     // 升变待选
     pending_promotion: Option<(Square, Square)>,
-
-    // 引擎走棋触发
-    engine_pending: bool,
 }
 
 impl ChessApp {
@@ -67,7 +64,6 @@ impl ChessApp {
             status_message: String::from("White to move"),
             drag: None,
             pending_promotion: None,
-            engine_pending: false,
         }
     }
 
@@ -335,7 +331,8 @@ impl ChessApp {
 
             let board_state = self.build_board_state();
 
-            self.board_renderer.paint(&painter, board_rect, &board_state, &self.piece_textures);
+            self.board_renderer
+                .paint(&painter, board_rect, &board_state, &self.piece_textures);
 
             if !is_replay {
                 self.handle_board_interaction(response, board_rect, ctx);
@@ -429,16 +426,11 @@ impl ChessApp {
 
         // 直接执行
         self.controller.make_move(matching[0]);
-        self.engine_pending = true;
     }
 
     /// 执行点击
     fn execute_click(&mut self, sq: Square) {
-        let result = self.controller.select_square(sq);
-        match result {
-            SelectionResult::MoveMade { .. } => {
-                self.engine_pending = true;
-            }
+        match self.controller.select_square(sq) {
             SelectionResult::NeedsPromotion { from, to } => {
                 self.pending_promotion = Some((from, to));
             }
@@ -465,7 +457,6 @@ impl ChessApp {
                         if ui.button(*label).clicked() {
                             self.controller.complete_promotion(from, to, *promo);
                             self.pending_promotion = None;
-                            self.engine_pending = true;
                         }
                     }
                 });
@@ -524,14 +515,8 @@ impl ChessApp {
     // 引擎
 
     fn handle_engine(&mut self, ctx: &egui::Context) {
-        if self.engine_pending || self.controller.is_engine_turn() {
-            self.engine_pending = false;
-            if self.controller.request_engine_move().is_some() {
-                // 引擎走了一步，请求重绘
-            }
-        }
-        if self.controller.is_engine_turn() {
-            ctx.request_repaint();
+        if self.controller.is_engine_turn() && self.controller.request_engine_move().is_some() {
+            ctx.request_repaint(); // 引擎走了一步，请求重绘
         }
     }
 }
