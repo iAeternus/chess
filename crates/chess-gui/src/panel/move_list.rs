@@ -1,8 +1,10 @@
 //! 走法列表面板：顶部导航按钮 + SAN 格式走法表格。
 
-use chess_core::Move;
+use chess_core::{Color, Move, PieceKind};
 use egui::{Color32, ScrollArea, Sense};
 use egui_extras::{Column, TableBuilder};
+
+use crate::constants::PIECE_ICONS;
 
 /// 走法列表操作
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -142,8 +144,9 @@ impl MoveListPanel {
 
                                     let san =
                                         san_list.get(white_idx).map(String::as_str).unwrap_or("??");
+                                    let display = san_with_icon(san, Color::White);
 
-                                    if self.move_cell(ui, san, current_ply == ply) {
+                                    if self.move_cell(ui, &display, current_ply == ply) {
                                         on_action(MoveListAction::JumpToPly(ply));
                                     }
                                 });
@@ -157,8 +160,9 @@ impl MoveListPanel {
                                             .get(black_idx)
                                             .map(String::as_str)
                                             .unwrap_or("??");
+                                        let display = san_with_icon(san, Color::Black);
 
-                                        if self.move_cell(ui, san, current_ply == ply) {
+                                        if self.move_cell(ui, &display, current_ply == ply) {
                                             on_action(MoveListAction::JumpToPly(ply));
                                         }
                                     }
@@ -170,8 +174,8 @@ impl MoveListPanel {
     }
 
     /// 渲染单个走法单元格
-    fn move_cell(&self, ui: &mut egui::Ui, san: &str, is_current: bool) -> bool {
-        let mut text = egui::RichText::new(san).size(16.0);
+    fn move_cell(&self, ui: &mut egui::Ui, display: &str, is_current: bool) -> bool {
+        let mut text = egui::RichText::new(display).size(16.0);
 
         if is_current {
             text = text.strong();
@@ -194,4 +198,32 @@ impl MoveListPanel {
 
         response.inner.clicked()
     }
+}
+
+fn san_with_icon(san: &str, color: Color) -> String {
+    let Some(first) = san.chars().next() else {
+        return String::new();
+    };
+
+    let kind = match first {
+        'K' => PieceKind::King,
+        'Q' => PieceKind::Queen,
+        'R' => PieceKind::Rook,
+        'B' => PieceKind::Bishop,
+        'N' => PieceKind::Knight,
+
+        // 兵没有 SAN 字母
+        _ => return san.to_string(),
+    };
+
+    let icon = PIECE_ICONS
+        .iter()
+        .find(|(piece, _, _)| *piece == kind)
+        .map(|(_, white, black)| match color {
+            Color::White => *white,
+            Color::Black => *black,
+        })
+        .unwrap_or("");
+
+    format!("{icon} {}", &san[1..])
 }
