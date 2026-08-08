@@ -36,12 +36,4 @@ impl ChessEngine for RandomEngine {
     fn name(&self) -> &str {
         &self.name
     }
-
-    fn set_time_limit(&mut self, ms: u64) {
-        self.time_limit = ms;
-    }
-
-    fn set_depth_limit(&mut self, depth: u32) {
-        self.depth_limit = depth;
-    }
 }
