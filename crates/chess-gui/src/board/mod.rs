@@ -1,10 +1,9 @@
 pub(crate) mod arrows;
 pub(crate) mod background;
+pub mod chess_board;
 pub(crate) mod coordinates;
 pub(crate) mod highlight;
-pub mod interaction;
 pub mod layout;
 pub(crate) mod pieces;
 pub mod renderer;
 pub mod state;
-pub mod widget;

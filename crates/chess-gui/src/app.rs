@@ -4,12 +4,11 @@
 
 use chess_ai::{ChessEngine, MiniMaxEngine, RandomEngine};
 use chess_core::{Color, Piece, Square};
-use egui::{Align2, Pos2, Sense};
+use egui::{Align2, Pos2};
 
-use crate::board::interaction;
+use crate::board::chess_board::{BoardEvent, ChessBoard};
 use crate::board::renderer::BoardRenderer;
 use crate::board::state::BoardState;
-use crate::board::widget::BoardWidget;
 use crate::constants::PROMOTION_PIECES;
 use crate::game::controller::{GameController, GameMode};
 use crate::panel::engine_info::{EngineInfo, EngineInfoPanel};
@@ -20,7 +19,7 @@ use crate::theme::AppTheme;
 
 pub struct ChessApp {
     controller: GameController,
-    board_renderer: BoardRenderer,
+    chess_board: ChessBoard,
     piece_textures: PieceTextureManager,
     theme: AppTheme,
 
@@ -56,7 +55,7 @@ impl ChessApp {
         let colors = theme.colors();
         Self {
             controller,
-            board_renderer: BoardRenderer::new(colors),
+            chess_board: ChessBoard::new(BoardRenderer::new(colors)),
             piece_textures,
             theme,
             move_list_panel: MoveListPanel::new(),
@@ -175,14 +174,14 @@ impl ChessApp {
                             .clicked()
                         {
                             self.theme.apply_egui_theme(ctx);
-                            self.board_renderer.set_colors(self.theme.colors());
+                            self.chess_board.set_colors(self.theme.colors());
                         }
                         if ui
                             .radio_value(&mut self.theme, AppTheme::Light, "Light")
                             .clicked()
                         {
                             self.theme.apply_egui_theme(ctx);
-                            self.board_renderer.set_colors(self.theme.colors());
+                            self.chess_board.set_colors(self.theme.colors());
                         }
                     });
                 });
@@ -354,36 +353,26 @@ impl ChessApp {
     fn show_board(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             let mode = self.controller.mode();
-            let is_replay = mode == GameMode::Replay;
-            let sense = if is_replay {
-                Sense::hover()
-            } else {
-                Sense::click_and_drag()
-            };
-
             let board_state = self.build_board_state();
 
-            let board = BoardWidget {
-                renderer: &self.board_renderer,
-                textures: &self.piece_textures,
-                state: &board_state,
-                flipped: self.flipped,
-                sense,
-            }
-            .show(ui);
+            self.chess_board.set_flipped(self.flipped);
+            let response = self.chess_board.show(
+                ui,
+                &board_state,
+                &self.piece_textures,
+                &mut self.controller,
+                &mut self.drag,
+                ctx,
+                mode,
+            );
 
-            if !is_replay
-                && let Some(promotion) = interaction::handle_interaction(
-                    &board.response,
-                    &board.layout,
-                    &mut self.controller,
-                    &mut self.drag,
-                    ctx,
-                    mode,
-                    self.flipped,
-                )
-            {
-                self.pending_promotion = Some(promotion);
+            for event in response.events {
+                match event {
+                    BoardEvent::MoveMade(_) => {}
+                    BoardEvent::PromotionNeeded { from, to } => {
+                        self.pending_promotion = Some((from, to));
+                    }
+                }
             }
         });
     }
