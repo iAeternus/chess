@@ -61,11 +61,12 @@ pub struct GameController {
 
     /// 当前选中的格子
     selected_square: Option<Square>,
-    /// 当前局面的所有合法走法（缓存，避免每帧生成）
-    legal_moves_cache: ArrayVec<Move, 256>,
 
     /// AI 引擎（仅在 HumanVsAI 模式下存在）
     engine: Option<Box<dyn ChessEngine>>,
+
+    /// 人类执什么颜色（默认 White，即引擎执黑）
+    player_color: Color,
 }
 
 impl GameController {
@@ -73,35 +74,31 @@ impl GameController {
 
     /// 创建默认对局（标准初始局面，双人对战模式）
     pub fn new() -> Self {
-        let mut controller = Self {
+        Self {
             game: Game::new(),
             mode: GameMode::HumanVsHuman,
             move_history: Vec::with_capacity(256),
             current_ply: 0,
             san_cache: Vec::with_capacity(256),
             selected_square: None,
-            legal_moves_cache: ArrayVec::new(),
             engine: None,
-        };
-        controller.refresh_legal_moves();
-        controller
+            player_color: Color::White,
+        }
     }
 
     /// 创建带引擎的对局
     #[allow(dead_code)]
     pub fn new_with_engine(mode: GameMode, engine: Box<dyn ChessEngine>) -> Self {
-        let mut controller = Self {
+        Self {
             game: Game::new(),
             mode,
             move_history: Vec::with_capacity(256),
             current_ply: 0,
             san_cache: Vec::with_capacity(256),
             selected_square: None,
-            legal_moves_cache: ArrayVec::new(),
             engine: Some(engine),
-        };
-        controller.refresh_legal_moves();
-        controller
+            player_color: Color::White,
+        }
     }
 
     /// 从 PGN 字符串加载对局（自动进入 Replay 模式）
@@ -121,11 +118,10 @@ impl GameController {
             current_ply: 0,
             san_cache: Vec::with_capacity(256),
             selected_square: None,
-            legal_moves_cache: ArrayVec::new(),
             engine: None,
+            player_color: Color::White,
         };
         controller.refresh_san_cache();
-        controller.refresh_legal_moves();
         Ok(controller)
     }
 
@@ -138,18 +134,18 @@ impl GameController {
 
     /// 获取当前局面的所有合法走法
     #[allow(dead_code)]
-    pub fn legal_moves(&self) -> &ArrayVec<Move, 256> {
-        &self.legal_moves_cache
+    pub fn legal_moves(&self) -> ArrayVec<Move, 256> {
+        self.game.legal_moves()
     }
 
     /// 获取当前选中棋子可以走到的合法目标走法
     pub fn legal_moves_for_selected(&self) -> ArrayVec<Move, 256> {
         match self.selected_square {
             Some(sq) => self
-                .legal_moves_cache
-                .iter()
+                .game
+                .legal_moves()
+                .into_iter()
                 .filter(|m| m.from() == sq)
-                .copied()
                 .collect(),
             None => ArrayVec::new(),
         }
@@ -177,6 +173,7 @@ impl GameController {
         let position = self.game.position();
         let piece_at_sq = position.piece_at(sq);
         let side_to_move = position.side_to_move();
+        let legal_moves = self.game.legal_moves();
 
         // 分析模式下可以移动任意一方的棋子；其他模式下只能移动当前方
         let can_select =
@@ -194,8 +191,7 @@ impl GameController {
             }
 
             // 检查是否点击了合法目标
-            let matching: ArrayVec<Move, 256> = self
-                .legal_moves_cache
+            let matching: ArrayVec<Move, 256> = legal_moves
                 .iter()
                 .filter(|m| m.from() == selected && m.to() == sq)
                 .copied()
@@ -222,7 +218,7 @@ impl GameController {
 
         // 无选中棋子：检查该棋子是否有合法走法，没有则不可选中
         if piece_at_sq.is_some() && can_select {
-            let has_legal = self.legal_moves_cache.iter().any(|m| m.from() == sq);
+            let has_legal = legal_moves.iter().any(|m| m.from() == sq);
             if has_legal {
                 self.set_selected(sq);
                 return SelectionResult::Selected { square: sq };
@@ -244,7 +240,6 @@ impl GameController {
             self.move_history.push(mv);
             self.current_ply += 1;
             self.clear_selection();
-            self.refresh_legal_moves();
             self.refresh_san_cache();
         }
     }
@@ -257,10 +252,10 @@ impl GameController {
         promotion: Promotion,
     ) -> SelectionResult {
         let mv = self
-            .legal_moves_cache
-            .iter()
-            .find(|m| m.from() == from && m.to() == to && m.promotion() == Some(promotion))
-            .copied();
+            .game
+            .legal_moves()
+            .into_iter()
+            .find(|m| m.from() == from && m.to() == to && m.promotion() == Some(promotion));
 
         if let Some(mv) = mv {
             self.make_move(mv);
@@ -393,7 +388,7 @@ impl GameController {
 
     /// 对局是否结束（分析模式下永不结束）
     #[allow(dead_code)]
-    pub fn is_game_over(&mut self) -> bool {
+    pub fn is_game_over(&self) -> bool {
         if self.mode == GameMode::Analysis {
             return false;
         }
@@ -448,7 +443,6 @@ impl GameController {
         self.move_history.clear();
         self.current_ply = 0;
         self.clear_selection();
-        self.refresh_legal_moves();
         self.refresh_san_cache();
     }
 
@@ -469,7 +463,7 @@ impl GameController {
     pub fn is_engine_turn(&self) -> bool {
         self.mode == GameMode::HumanVsAI
             && self.engine.is_some()
-            && self.game.position().side_to_move() == Color::Black
+            && self.game.position().side_to_move() != self.player_color
             && self.current_ply >= self.move_history.len()
     }
 
@@ -478,17 +472,28 @@ impl GameController {
         self.engine.as_ref().map(|e| e.name())
     }
 
+    /// 获取人类执棋颜色
+    pub fn player_color(&self) -> Color {
+        self.player_color
+    }
+
+    /// 设置人类执棋颜色（会重置对局）
+    pub fn set_player_color(&mut self, color: Color) {
+        self.player_color = color;
+        self.new_game();
+    }
+
+    /// 设置 AI 引擎（会重置对局）
+    pub fn set_engine(&mut self, engine: Box<dyn ChessEngine>) {
+        self.engine = Some(engine);
+        self.new_game();
+    }
+
     // 内部方法
 
     /// 设置选中格子
     fn set_selected(&mut self, sq: Square) {
         self.selected_square = Some(sq);
-        // legal_moves_cache 已包含所有合法走法，UI 按 from 过滤即可
-    }
-
-    /// 刷新合法走法缓存
-    fn refresh_legal_moves(&mut self) {
-        self.legal_moves_cache = self.game.legal_moves();
     }
 
     /// 核心导航方法：reset + 重放到目标 ply
@@ -504,7 +509,6 @@ impl GameController {
         }
         self.current_ply = target;
         self.clear_selection();
-        self.refresh_legal_moves();
     }
 }
 

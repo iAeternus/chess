@@ -2,8 +2,8 @@
 //!
 //! 负责协调各个子系统：GameController、BoardRenderer、面板、纹理、交互。
 
-use chess_ai::RandomEngine;
-use chess_core::{Piece, Square};
+use chess_ai::{ChessEngine, MiniMaxEngine, RandomEngine};
+use chess_core::{Color, Piece, Square};
 use egui::{Align2, Pos2, Sense};
 
 use crate::board::interaction;
@@ -40,6 +40,9 @@ pub struct ChessApp {
 
     // 升变待选
     pending_promotion: Option<(Square, Square)>,
+
+    // HumanVsAI: 引擎选择
+    selected_engine_index: usize,
 }
 
 impl ChessApp {
@@ -63,11 +66,11 @@ impl ChessApp {
             flipped: false,
             drag: None,
             pending_promotion: None,
+            selected_engine_index: 0,
         }
     }
 
-    // 状态同步
-
+    /// 状态同步
     fn update_status(&mut self) {
         let at_end = self.controller.current_ply() >= self.controller.total_moves()
             && self.controller.total_moves() > 0;
@@ -106,8 +109,7 @@ impl ChessApp {
         }
     }
 
-    // 键盘处理
-
+    /// 键盘处理
     fn handle_keyboard(&mut self, ctx: &egui::Context) {
         ctx.input(|i| {
             if i.key_pressed(egui::Key::ArrowLeft) {
@@ -131,8 +133,7 @@ impl ChessApp {
         });
     }
 
-    // 菜单栏
-
+    /// 菜单栏
     fn show_menu(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
@@ -195,8 +196,8 @@ impl ChessApp {
                         ui.close_menu();
                     }
                     if ui.button("Human vs AI").clicked() {
-                        self.controller
-                            .set_mode(GameMode::HumanVsAI, Some(Box::new(RandomEngine::default())));
+                        let engine = self.create_engine();
+                        self.controller.set_mode(GameMode::HumanVsAI, Some(engine));
                         self.drag = None;
                         self.pending_promotion = None;
                         ui.close_menu();
@@ -212,8 +213,7 @@ impl ChessApp {
         });
     }
 
-    // 侧边面板
-
+    /// 侧边面板
     fn show_side_panel(&mut self, ctx: &egui::Context) {
         egui::SidePanel::right("side_panel")
             .resizable(false)
@@ -257,6 +257,58 @@ impl ChessApp {
                     self.controller.current_ply(),
                     self.controller.total_moves()
                 ));
+
+                // HumanVsAI 模式下的引擎/执棋方选择
+                if self.controller.mode() == GameMode::HumanVsAI {
+                    ui.separator();
+
+                    // 引擎选择
+                    ui.horizontal(|ui| {
+                        ui.label("Engine:");
+                        let engine_options = [
+                            "Random",
+                            "Minimax (depth 3)",
+                            "Minimax (depth 4)",
+                            "Minimax (depth 5)",
+                        ];
+                        let mut changed = false;
+                        egui::ComboBox::from_id_salt("engine_select")
+                            .selected_text(engine_options[self.selected_engine_index])
+                            .show_ui(ui, |ui| {
+                                for (i, label) in engine_options.iter().enumerate() {
+                                    if ui
+                                        .selectable_value(
+                                            &mut self.selected_engine_index,
+                                            i,
+                                            *label,
+                                        )
+                                        .clicked()
+                                    {
+                                        changed = true;
+                                    }
+                                }
+                            });
+                        if changed {
+                            let engine = self.create_engine();
+                            self.controller.set_engine(engine);
+                        }
+                    });
+
+                    // 执棋方选择
+                    ui.horizontal(|ui| {
+                        ui.label("Play as:");
+                        let player_color = self.controller.player_color();
+                        let mut selected = player_color == Color::White;
+                        if ui.selectable_label(selected, "White").clicked() && !selected {
+                            self.controller.set_player_color(Color::White);
+                        }
+                        selected = player_color == Color::Black;
+                        if ui.selectable_label(selected, "Black").clicked() && !selected {
+                            self.controller.set_player_color(Color::Black);
+                        }
+                    });
+                }
+
                 ui.separator();
 
                 // 工具栏
@@ -298,8 +350,7 @@ impl ChessApp {
             });
     }
 
-    // 棋盘区域
-
+    /// 棋盘区域
     fn show_board(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             let mode = self.controller.mode();
@@ -337,8 +388,7 @@ impl ChessApp {
         });
     }
 
-    // 升变弹窗
-
+    /// 升变弹窗
     fn show_promotion_dialog(&mut self, ctx: &egui::Context) {
         let (from, to) = match self.pending_promotion {
             Some(p) => p,
@@ -362,8 +412,7 @@ impl ChessApp {
             });
     }
 
-    // PGN 导入/导出
-
+    /// PGN 导入
     fn open_pgn(&mut self) {
         if let Some(path) = rfd::FileDialog::new()
             .add_filter("PGN Files", &["pgn"])
@@ -391,6 +440,7 @@ impl ChessApp {
         }
     }
 
+    /// PGN 导出
     fn save_pgn(&mut self) {
         if let Some(path) = rfd::FileDialog::new()
             .add_filter("PGN Files", &["pgn"])
@@ -411,7 +461,15 @@ impl ChessApp {
         }
     }
 
-    // 引擎
+    /// 根据当前选中的引擎索引创建对应的引擎实例
+    fn create_engine(&self) -> Box<dyn ChessEngine> {
+        match self.selected_engine_index {
+            0 => Box::new(RandomEngine::default()),
+            1 => Box::new(MiniMaxEngine::new(3)),
+            2 => Box::new(MiniMaxEngine::new(4)),
+            _ => Box::new(MiniMaxEngine::new(5)),
+        }
+    }
 
     fn handle_engine(&mut self, ctx: &egui::Context) {
         if self.controller.is_engine_turn() && self.controller.request_engine_move().is_some() {

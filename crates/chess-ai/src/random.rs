@@ -1,4 +1,4 @@
-use chess_core::{Move, Position, generate_legal};
+use chess_core::{Move, Position, legal_moves_of};
 use rand::seq::IndexedRandom;
 
 use crate::ChessEngine;
@@ -13,8 +13,7 @@ impl ChessEngine for RandomEngine {
     }
 
     fn search(&mut self, position: &Position) -> Option<Move> {
-        let mut position = position.clone();
-        let moves = generate_legal(&mut position);
+        let moves = legal_moves_of(position);
         moves.choose(&mut rand::rng()).copied()
     }
 }

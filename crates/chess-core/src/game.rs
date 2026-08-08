@@ -44,8 +44,8 @@ impl Game {
     }
 
     /// 获取当前所有合法走法
-    pub fn legal_moves(&mut self) -> ArrayVec<Move, 256> {
-        movegen::generate_legal(&mut self.position)
+    pub fn legal_moves(&self) -> ArrayVec<Move, 256> {
+        movegen::legal_moves_of(&self.position)
     }
 
     /// 执行走法
@@ -70,17 +70,17 @@ impl Game {
     }
 
     /// 检测游戏是否结束
-    pub fn is_game_over(&mut self) -> bool {
+    pub fn is_game_over(&self) -> bool {
         self.is_checkmate() || self.is_stalemate()
     }
 
     /// 检测是否将杀
-    pub fn is_checkmate(&mut self) -> bool {
+    pub fn is_checkmate(&self) -> bool {
         self.position.is_check() && self.legal_moves().is_empty()
     }
 
     /// 检测是否逼和
-    pub fn is_stalemate(&mut self) -> bool {
+    pub fn is_stalemate(&self) -> bool {
         !self.position.is_check() && self.legal_moves().is_empty()
     }
 
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn initial_position_20_moves() {
-        let mut game = Game::new();
+        let game = Game::new();
         let moves = game.legal_moves();
 
         // 初始局面：
@@ -153,7 +153,7 @@ mod tests {
         // 黑车 f3，攻击 f1 格
         // 王翼易位需要经过 f1
         // f1 被攻击，王不能经过危险格，因此禁止易位
-        let mut game = Game::from_fen("4k3/8/8/8/8/5r2/8/4K2R w K - 0 1").unwrap();
+        let game = Game::from_fen("4k3/8/8/8/8/5r2/8/4K2R w K - 0 1").unwrap();
         let moves = game.legal_moves();
         let castle = Move::new(Square::E1, Square::G1, MoveFlag::KingCastle);
         assert!(!moves.contains(&castle));
@@ -183,7 +183,7 @@ mod tests {
         // 白兵 e5，黑兵 d5
         // 但是 FEN 中没有 ep 权限
         // 即使白兵可以攻击 d6，也不能执行吃过路兵
-        let mut game = Game::from_fen("4k3/8/8/3pP3/8/8/4K3/8 w - - 0 1").unwrap();
+        let game = Game::from_fen("4k3/8/8/3pP3/8/8/4K3/8 w - - 0 1").unwrap();
         let mv = Move::new(Square::E5, Square::D6, MoveFlag::EnPassant);
         assert!(!game.legal_moves().contains(&mv));
     }
@@ -242,7 +242,7 @@ mod tests {
         // 白后 g7，占据黑王附近并攻击 h8
         // 黑王被将军，且无合法逃脱格
         // 形成将杀
-        let mut game = Game::from_fen("7k/6Q1/5K2/8/8/8/8/8 b - - 0 1").unwrap();
+        let game = Game::from_fen("7k/6Q1/5K2/8/8/8/8/8 b - - 0 1").unwrap();
         assert!(game.is_checkmate());
         assert!(game.is_game_over());
     }
@@ -254,7 +254,7 @@ mod tests {
         // 白后 g6，限制黑王活动范围
         // 黑王没有合法走法
         // 但当前没有被将军，因此为逼和
-        let mut game = Game::from_fen("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1").unwrap();
+        let game = Game::from_fen("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1").unwrap();
         assert!(game.is_stalemate());
         assert!(game.is_game_over());
     }

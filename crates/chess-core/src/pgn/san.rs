@@ -95,8 +95,7 @@ pub fn parse_san(position: &Position, san: &str) -> Result<Move> {
         .map(|c| c as u8 - b'1');
 
     // 生成所有合法走法并匹配
-    let mut pos = position.clone();
-    let legal_moves = movegen::generate_legal(&mut pos);
+    let legal_moves = movegen::legal_moves_of(position);
 
     let candidates: Vec<Move> = legal_moves
         .into_iter()
@@ -171,8 +170,7 @@ pub fn move_to_san(position: &Position, mv: Move) -> Result<String> {
     }
 
     // 生成所有合法走法以判断消歧义需求
-    let mut pos = position.clone();
-    let legal_moves = movegen::generate_legal(&mut pos);
+    let legal_moves = movegen::legal_moves_of(position);
 
     // 找到所有与当前走法有相同目标格和棋子类型的走法
     let ambiguous: Vec<Move> = legal_moves
@@ -234,8 +232,7 @@ pub fn move_to_san(position: &Position, mv: Move) -> Result<String> {
 
 /// 寻找与指定易位类型匹配的走法
 fn find_castle(position: &Position, flag: MoveFlag, original: &str) -> Result<Move> {
-    let mut pos = position.clone();
-    let legal_moves = movegen::generate_legal(&mut pos);
+    let legal_moves = movegen::legal_moves_of(position);
     for mv in legal_moves {
         if mv.flag() == flag {
             return Ok(mv);

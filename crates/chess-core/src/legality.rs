@@ -8,7 +8,7 @@ use crate::{
 /// 条件：
 /// 1. move本身是伪合法
 /// 2. 移动后己方King不能被攻击
-pub(crate) fn is_legal(position: &mut Position, mv: Move) -> bool {
+pub fn is_legal(position: &mut Position, mv: Move) -> bool {
     if let Some(piece) = position.piece_at(mv.to()) {
         if piece.kind == PieceKind::King {
             return false;

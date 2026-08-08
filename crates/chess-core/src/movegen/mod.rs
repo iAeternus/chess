@@ -24,7 +24,10 @@ pub fn generate_pseudo_legal(position: &Position) -> ArrayVec<Move, 256> {
     moves
 }
 
-/// 生成所有合法走法
+/// 生成所有合法走法（`&mut Position` 版本，零 clone）
+///
+/// 内部通过 make/unmake 检查合法性，会临时修改局面但调用后恢复。
+/// 适合已持有 `&mut Position` 的场景（如 minimax 搜索、perft）。
 /// 流程：pseudo legal -> make_move -> 检查自己的King
 pub fn generate_legal(position: &mut Position) -> ArrayVec<Move, 256> {
     // SAFETY: 一个局面最多约218步 < 256
@@ -32,6 +35,14 @@ pub fn generate_legal(position: &mut Position) -> ArrayVec<Move, 256> {
         .into_iter()
         .filter(|mv| legality::is_legal(position, *mv))
         .collect()
+}
+
+/// 生成所有合法走法（`&Position` 便捷版本，内部 clone 一次）
+///
+/// 适合只有共享引用（`&Position`）的场景，调用方无需手动 clone。
+pub fn legal_moves_of(position: &Position) -> ArrayVec<Move, 256> {
+    let mut pos = position.clone();
+    generate_legal(&mut pos)
 }
 
 #[cfg(test)]

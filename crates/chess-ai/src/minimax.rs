@@ -11,6 +11,12 @@ pub struct MiniMaxEngine {
     depth: i32,
 }
 
+impl Default for MiniMaxEngine {
+    fn default() -> Self {
+        Self::new(3)
+    }
+}
+
 impl MiniMaxEngine {
     pub fn new(depth: i32) -> Self {
         Self { depth }
@@ -25,8 +31,8 @@ impl MiniMaxEngine {
             return evaluate(position);
         }
 
-        let mut pos = position.clone();
-        let moves = generate_legal(&mut pos);
+        // 利用已有的 &mut position，直接用 generate_legal（内部 make/unmake 会恢复）
+        let moves = generate_legal(position);
 
         match position.side_to_move() {
             Color::White => {
