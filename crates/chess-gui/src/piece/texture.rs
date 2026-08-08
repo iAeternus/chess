@@ -116,7 +116,7 @@ impl PieceTextureManager {
             Pos2::new(center.x + half, center.y + half),
         );
 
-        // 图像 UV：完整图像 (0,0) → (1,1)
+        // 图像 UV：完整图像 (0,0) -> (1,1)
         let uv = Rect::from_min_max(Pos2::new(0.0, 0.0), Pos2::new(1.0, 1.0));
 
         painter.image(texture.id(), rect, uv, Color32::WHITE);

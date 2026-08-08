@@ -95,7 +95,7 @@ impl BoardLayout {
         self.square_rect(sq, flipped).center()
     }
 
-    /// painter-local 坐标 → 棋盘格子
+    /// painter-local 坐标 -> 棋盘格子
     ///
     /// 如果坐标不在棋盘区域内则返回 `None`
     pub fn pos_to_square(&self, pos: Pos2, flipped: bool) -> Option<Square> {

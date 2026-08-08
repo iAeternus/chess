@@ -52,7 +52,7 @@ impl MoveListPanel {
             let buttons = [
                 ("⏮", can_back, MoveListAction::GoToStart, "Start (Home)"),
                 ("◀", can_back, MoveListAction::GoBack, "Back (←)"),
-                ("▶", can_forward, MoveListAction::GoForward, "Forward (→)"),
+                ("▶", can_forward, MoveListAction::GoForward, "Forward (->)"),
                 ("⏭", can_forward, MoveListAction::GoToEnd, "End (End)"),
             ];
 

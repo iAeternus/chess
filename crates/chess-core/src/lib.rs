@@ -26,11 +26,11 @@
 //!
 //! ### 建议使用方式
 //!
-//! - **编写 AI 引擎** → 使用 Fundamental 层：直接操作 [`Position`]，调用
+//! - **编写 AI 引擎** -> 使用 Fundamental 层：直接操作 [`Position`]，调用
 //!   [`generate_legal`]、[`make_move`]/[`unmake_move`]，避免 [`Game`] 的开销
-//! - **编写 GUI / 对局管理** → 使用 Orchestration 层：通过 [`Game`] 管理走法历史、
+//! - **编写 GUI / 对局管理** -> 使用 Orchestration 层：通过 [`Game`] 管理走法历史、
 //!   导入/导出 PGN、查询对局状态
-//! - **编写 PGN 工具** → 启用 `all` feature，使用 [`from_pgn`]、[`to_pgn`]、[`parse_san`]、
+//! - **编写 PGN 工具** -> 启用 `all` feature，使用 [`from_pgn`]、[`to_pgn`]、[`parse_san`]、
 //!   [`move_to_san`]
 
 mod attack;

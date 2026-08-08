@@ -13,7 +13,7 @@ const PIECE_RATIO: f32 = 0.90;
 pub struct PieceRenderer;
 
 impl PieceRenderer {
-    /// 按顺序绘制：静态棋子 → 拖拽残影 → 拖拽浮子。
+    /// 按顺序绘制：静态棋子 -> 拖拽残影 -> 拖拽浮子。
     pub fn paint(
         painter: &egui::Painter,
         layout: &BoardLayout,

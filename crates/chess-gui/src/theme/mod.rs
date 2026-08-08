@@ -72,7 +72,7 @@ impl AppTheme {
                 coord_light: Color32::from_rgba_premultiplied(238, 238, 210, 200),
                 coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
-                // Lichess 风格将军光晕：中心亮红 → 边缘完全透明
+                // Lichess 风格将军光晕：中心亮红 -> 边缘完全透明
                 check_glow_inner: Color32::from_rgb(255, 0, 0), // 0%: 实心亮红
                 check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200), // 25%: 暗红半透明
                 check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0), // 89%: 完全透明
@@ -97,7 +97,7 @@ impl AppTheme {
                 coord_light: Color32::from_rgba_premultiplied(238, 238, 210, 200),
                 coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
-                // Lichess 风格将军光晕：中心亮红 → 边缘完全透明
+                // Lichess 风格将军光晕：中心亮红 -> 边缘完全透明
                 check_glow_inner: Color32::from_rgb(255, 0, 0), // 0%: 实心亮红
                 check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200), // 25%: 暗红半透明
                 check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0), // 89%: 完全透明

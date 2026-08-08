@@ -164,11 +164,11 @@ impl GameController {
 
     /// 点击格子：根据当前选中状态决定行为
     ///
-    /// - 未选中 + 点击己方棋子 → 选中
-    /// - 已选中 + 点击己方其他棋子 → 重新选中
-    /// - 已选中 + 点击合法目标 → 执行走法（可能触发升变选择）
-    /// - 已选中 + 点击非法目标 → 清除选中
-    /// - 已选中 + 点击同一格子 → 清除选中
+    /// - 未选中 + 点击己方棋子 -> 选中
+    /// - 已选中 + 点击己方其他棋子 -> 重新选中
+    /// - 已选中 + 点击合法目标 -> 执行走法（可能触发升变选择）
+    /// - 已选中 + 点击非法目标 -> 清除选中
+    /// - 已选中 + 点击同一格子 -> 清除选中
     pub fn select_square(&mut self, sq: Square) -> SelectionResult {
         let position = self.game.position();
         let piece_at_sq = position.piece_at(sq);
@@ -185,7 +185,7 @@ impl GameController {
                 && can_select
                 && sq != selected
             {
-                // 点击了另一个可选棋子 → 重新选中
+                // 点击了另一个可选棋子 -> 重新选中
                 self.set_selected(sq);
                 return SelectionResult::Selected { square: sq };
             }
