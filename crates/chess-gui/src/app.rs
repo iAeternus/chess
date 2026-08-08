@@ -3,27 +3,20 @@
 //! 负责协调各个子系统：GameController、BoardRenderer、面板、纹理、交互。
 
 use chess_ai::RandomEngine;
-use chess_core::{Piece, Promotion, Square};
+use chess_core::{Piece, Square};
 use egui::{Align2, Pos2, Sense};
 
 use crate::board::interaction;
 use crate::board::renderer::BoardRenderer;
 use crate::board::state::BoardState;
 use crate::board::widget::BoardWidget;
+use crate::constants::PROMOTION_PIECES;
 use crate::game::controller::{GameController, GameMode};
 use crate::panel::engine_info::{EngineInfo, EngineInfoPanel};
 use crate::panel::move_list::{MoveListAction, MoveListPanel};
 use crate::panel::toolbar::{Toolbar, ToolbarAction};
 use crate::piece::texture::PieceTextureManager;
 use crate::theme::AppTheme;
-
-/// 升变棋子选项
-const PROMOTION_PIECES: &[(Promotion, &str)] = &[
-    (Promotion::Queen, "♛"),
-    (Promotion::Rook, "♜"),
-    (Promotion::Bishop, "♝"),
-    (Promotion::Knight, "♞"),
-];
 
 pub struct ChessApp {
     controller: GameController,
@@ -272,9 +265,7 @@ impl ChessApp {
                     .show(ui, self.controller.mode() == GameMode::Replay);
                 for action in actions {
                     match action {
-                        ToolbarAction::FlipBoard => {
-                            self.flipped = !self.flipped
-                        }
+                        ToolbarAction::FlipBoard => self.flipped = !self.flipped,
                         ToolbarAction::NewGame => self.controller.new_game(),
                         ToolbarAction::OpenPgn => self.open_pgn(),
                         ToolbarAction::SavePgn => self.save_pgn(),

@@ -2,6 +2,7 @@
 
 mod app;
 mod board;
+mod constants;
 mod game;
 mod panel;
 mod piece;
