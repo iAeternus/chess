@@ -48,33 +48,24 @@ impl MoveListPanel {
 
         // 导航按钮行
         ui.horizontal(|ui| {
-            if ui
-                .add_enabled(can_back, egui::Button::new("|◀"))
-                .on_hover_text("Start (Home)")
-                .clicked()
-            {
-                on_action(MoveListAction::GoToStart);
-            }
-            if ui
-                .add_enabled(can_back, egui::Button::new("◀"))
-                .on_hover_text("Back (←)")
-                .clicked()
-            {
-                on_action(MoveListAction::GoBack);
-            }
-            if ui
-                .add_enabled(can_forward, egui::Button::new("▶"))
-                .on_hover_text("Forward (→)")
-                .clicked()
-            {
-                on_action(MoveListAction::GoForward);
-            }
-            if ui
-                .add_enabled(can_forward, egui::Button::new("▶|"))
-                .on_hover_text("End (End)")
-                .clicked()
-            {
-                on_action(MoveListAction::GoToEnd);
+            let buttons = [
+                ("⏮", can_back, MoveListAction::GoToStart, "Start (Home)"),
+                ("◀", can_back, MoveListAction::GoBack, "Back (←)"),
+                ("▶", can_forward, MoveListAction::GoForward, "Forward (→)"),
+                ("⏭", can_forward, MoveListAction::GoToEnd, "End (End)"),
+            ];
+
+            for (icon, enabled, action, tooltip) in buttons {
+                if ui
+                    .add_enabled(
+                        enabled,
+                        egui::Button::new(egui::RichText::new(icon).size(20.0)),
+                    )
+                    .on_hover_text(tooltip)
+                    .clicked()
+                {
+                    on_action(action);
+                }
             }
         });
 
