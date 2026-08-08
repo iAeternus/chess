@@ -44,7 +44,6 @@ impl MoveListPanel {
         mut on_action: impl FnMut(MoveListAction),
     ) {
         ui.heading("Moves");
-        ui.separator();
 
         // 导航按钮行
         ui.horizontal(|ui| {

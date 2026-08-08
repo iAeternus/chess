@@ -28,7 +28,6 @@ impl EngineInfoPanel {
 
     pub fn show(&self, ui: &mut egui::Ui, info: &EngineInfo) {
         ui.heading("Engine");
-        ui.separator();
 
         // 引擎名称
         if let Some(ref name) = info.name {

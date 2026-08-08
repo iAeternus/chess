@@ -22,36 +22,24 @@ impl Toolbar {
         let mut actions = Vec::new();
 
         ui.horizontal(|ui| {
-            // 棋盘操作
-            if ui
-                .button("↻ Flip")
-                .on_hover_text("Flip Board (R)")
-                .clicked()
-            {
-                actions.push(ToolbarAction::FlipBoard);
-            }
-            if ui
-                .add_enabled(!replay_mode, egui::Button::new("✦ New"))
-                .on_hover_text("New Game (N)")
-                .clicked()
-            {
-                actions.push(ToolbarAction::NewGame);
-            }
-            ui.separator();
-            // 文件操作
-            if ui
-                .button("📂 Open")
-                .on_hover_text("Open PGN file")
-                .clicked()
-            {
-                actions.push(ToolbarAction::OpenPgn);
-            }
-            if ui
-                .button("💾 Save")
-                .on_hover_text("Save PGN file")
-                .clicked()
-            {
-                actions.push(ToolbarAction::SavePgn);
+            let buttons = [
+                ("↻ Flip", "Flip Board (R)", !false, ToolbarAction::FlipBoard),
+                ("✦ New", "New Game (N)", !replay_mode, ToolbarAction::NewGame),
+                ("📂 Open", "Open PGN file", true, ToolbarAction::OpenPgn),
+                ("💾 Save", "Save PGN file", true, ToolbarAction::SavePgn),
+            ];
+
+            for (icon, tooltip, enabled, action) in buttons {
+                if ui
+                    .add_enabled(
+                        enabled,
+                        egui::Button::new(egui::RichText::new(icon).size(16.0)),
+                    )
+                    .on_hover_text(tooltip)
+                    .clicked()
+                {
+                    actions.push(action);
+                }
             }
         });
 
