@@ -68,6 +68,10 @@ impl Board {
         // SAFETY: 每方有且仅有一个King
         self.piece_kind(color, PieceKind::King).lsb().unwrap()
     }
+
+    pub fn iter_pieces(&self) -> BoardIter<'_> {
+        BoardIter::new(self)
+    }
 }
 
 impl Default for Board {
@@ -76,6 +80,98 @@ impl Default for Board {
         Self {
             pieces: [[BitBoard::empty(); 6]; 2],
             by_square: [None; 64],
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a Board {
+    type Item = (Square, Piece);
+    type IntoIter = BoardIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_pieces()
+    }
+}
+
+/// Board 棋子遍历器
+///
+/// 遍历顺序:
+/// White Pawn
+/// White Knight
+/// ...
+/// White King
+/// Black Pawn
+/// ...
+/// Black King
+pub struct BoardIter<'a> {
+    board: &'a Board,
+
+    /// 当前颜色索引
+    color_index: usize,
+
+    /// 当前棋子类型索引
+    kind_index: usize,
+
+    /// 当前正在遍历的 BitBoard
+    current: BitBoard,
+}
+
+impl<'a> BoardIter<'a> {
+    pub fn new(board: &'a Board) -> Self {
+        let color = Color::ALL[0];
+        let kind = PieceKind::ALL[0];
+        Self {
+            board,
+            color_index: 0,
+            kind_index: 0,
+            current: board.piece_kind(color, kind),
+        }
+    }
+
+    /// 移动到下一个非空 BitBoard
+    fn advance(&mut self) -> bool {
+        loop {
+            self.kind_index += 1;
+
+            // 当前颜色的棋子类型遍历完成
+            if self.kind_index >= PieceKind::ALL.len() {
+                self.kind_index = 0;
+                self.color_index += 1;
+            }
+
+            // 所有棋子遍历完成
+            if self.color_index >= Color::ALL.len() {
+                return false;
+            }
+
+            let color = Color::ALL[self.color_index];
+            let kind = PieceKind::ALL[self.kind_index];
+            self.current = self.board.piece_kind(color, kind);
+
+            // 找到非空 bitboard
+            if !self.current.is_empty() {
+                return true;
+            }
+        }
+    }
+}
+
+impl<'a> Iterator for BoardIter<'a> {
+    type Item = (Square, Piece);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // 当前棋子类型还有剩余棋子
+            if let Some(square) = self.current.pop_lsb() {
+                let color = Color::ALL[self.color_index];
+                let kind = PieceKind::ALL[self.kind_index];
+                return Some((square, Piece::new(color, kind)));
+            }
+
+            // 当前类型结束，寻找下一个类型
+            if !self.advance() {
+                return None;
+            }
         }
     }
 }

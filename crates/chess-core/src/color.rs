@@ -6,6 +6,8 @@ pub enum Color {
 }
 
 impl Color {
+    pub const ALL: [Color; 2] = [Color::White, Color::Black];
+
     pub fn flip(&self) -> Self {
         match self {
             Color::White => Color::Black,
