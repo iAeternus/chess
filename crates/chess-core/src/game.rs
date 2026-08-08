@@ -1,8 +1,7 @@
 use arrayvec::ArrayVec;
 
 use crate::{
-    ChessError, Move, PieceKind, Position, Result,
-    attack::is_square_attacked,
+    ChessError, Move, Position, Result,
     makemove::{Undo, make_move, unmake_move},
     movegen,
 };
@@ -75,27 +74,14 @@ impl Game {
         self.is_checkmate() || self.is_stalemate()
     }
 
-    /// 检测是否将军
-    pub fn is_check(&self) -> bool {
-        let side = self.position.side_to_move();
-        let king = self
-            .position
-            .board()
-            .piece_kind(side, PieceKind::King)
-            .lsb()
-            .expect(&format!("missing king for {}", side));
-
-        is_square_attacked(self.position.board(), king, side.flip())
-    }
-
     /// 检测是否将杀
     pub fn is_checkmate(&mut self) -> bool {
-        self.is_check() && self.legal_moves().is_empty()
+        self.position.is_check() && self.legal_moves().is_empty()
     }
 
     /// 检测是否逼和
     pub fn is_stalemate(&mut self) -> bool {
-        !self.is_check() && self.legal_moves().is_empty()
+        !self.position.is_check() && self.legal_moves().is_empty()
     }
 
     /// 走法历史
@@ -246,7 +232,7 @@ mod tests {
         // 黑车沿 e 文件攻击白王
         // 白王处于将军状态
         let game = Game::from_fen("4k3/8/8/8/8/8/4r3/4K3 w - - 0 1").unwrap();
-        assert!(game.is_check());
+        assert!(game.position().is_check());
     }
 
     #[test]

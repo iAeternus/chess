@@ -452,12 +452,16 @@ mod tests {
 
     #[test]
     fn test_promotion_capture_dxe8q() {
-        // d7 兵吃 e8 车并升变
-        let pos = Position::from_fen("2r1k3/3P4/4P3/8/8/8/8/4K3 w - - 0 1").unwrap();
+        // 黑: Ke7 Re8
+        // 白: Pd7
+        // 测试 dxe8=Q 吃车升变
+        let pos = Position::from_fen("4r3/3P4/8/8/8/8/8/4K2k w - - 0 1").unwrap();
+
         let mv = parse_san(&pos, "dxe8=Q").unwrap();
+
         assert_eq!(mv.from(), Square::D7);
         assert_eq!(mv.to(), Square::E8);
-        assert_eq!(mv.promotion().unwrap(), Promotion::Queen);
+        assert_eq!(mv.promotion(), Some(Promotion::Queen));
         assert!(mv.is_capture());
     }
 

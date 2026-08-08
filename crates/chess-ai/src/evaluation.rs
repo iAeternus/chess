@@ -1,4 +1,4 @@
-use chess_core::{Color, PieceKind, Position};
+use chess_core::{Color, PieceKind, Position, generate_legal};
 
 /// 子力评估
 /// 约定：正数代表白方优势，负数代表黑方优势
@@ -20,6 +20,23 @@ pub fn evaluate(position: &Position) -> i32 {
         }
     }
     score
+}
+
+pub fn terminal_score(position: &mut Position, ply: i32) -> Option<i32> {
+    let moves = generate_legal(position);
+    if !moves.is_empty() {
+        return None;
+    }
+
+    if position.is_check() {
+        match position.side_to_move() {
+            Color::White => Some(-100000 + ply),
+
+            Color::Black => Some(100000 - ply),
+        }
+    } else {
+        Some(0)
+    }
 }
 
 #[cfg(test)]

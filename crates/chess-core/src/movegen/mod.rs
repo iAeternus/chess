@@ -33,3 +33,21 @@ pub fn generate_legal(position: &mut Position) -> ArrayVec<Move, 256> {
         .filter(|mv| legality::is_legal(position, *mv))
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Position, Square};
+
+    #[test]
+    fn test_generate_legal_no_capture_king() {
+        let mut position = Position::from_fen("7k/6Q1/8/8/8/8/8/6K1 w - - 0 1").unwrap();
+        let moves = generate_legal(&mut position);
+
+        assert!(
+            !moves
+                .iter()
+                .any(|m| m.from() == Square::G7 && m.to() == Square::H8)
+        );
+    }
+}

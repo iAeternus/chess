@@ -1,4 +1,7 @@
-use crate::{Board, CastlingRights, Color, Piece, Result, Square, fen, zobrist::Zobrist};
+use crate::{
+    Board, CastlingRights, Color, Piece, PieceKind, Result, Square, attack::is_square_attacked,
+    fen, zobrist::Zobrist,
+};
 
 /// 局面
 #[derive(Clone)]
@@ -116,5 +119,17 @@ impl Position {
 
     pub fn piece_at(&self, sq: Square) -> Option<Piece> {
         self.board.piece_at(sq)
+    }
+
+    /// 检测是否将军
+    pub fn is_check(&self) -> bool {
+        let side = self.side_to_move();
+        let king = self
+            .board
+            .piece_kind(side, PieceKind::King)
+            .lsb()
+            .expect(&format!("missing king for {}", side));
+
+        is_square_attacked(&self.board, king, side.flip())
     }
 }

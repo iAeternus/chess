@@ -388,7 +388,7 @@ impl GameController {
 
     /// 当前是否将军
     pub fn is_check(&self) -> bool {
-        self.game.is_check()
+        self.game.position().is_check()
     }
 
     /// 对局是否结束（分析模式下永不结束）

@@ -23,6 +23,7 @@ pub use castling::CastlingRights;
 pub use color::Color;
 pub use error::{ChessError, Result};
 pub use game::Game;
+pub use makemove::{Undo, make_move, unmake_move};
 pub use movegen::generate_legal;
 pub use mv::{Move, MoveFlag, Promotion};
 pub use perft::{divide, perft};

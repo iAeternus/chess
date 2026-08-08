@@ -22,7 +22,7 @@ pub struct Undo {
 }
 
 /// 执行走法，返回 Undo 信息
-pub(crate) fn make_move(position: &mut Position, mv: Move) -> Undo {
+pub fn make_move(position: &mut Position, mv: Move) -> Undo {
     let mut hash = position.zobrist_key();
 
     let captured = match mv.flag() {
@@ -83,7 +83,7 @@ pub(crate) fn make_move(position: &mut Position, mv: Move) -> Undo {
 }
 
 /// 撤销走法
-pub(crate) fn unmake_move(position: &mut Position, undo: Undo) {
+pub fn unmake_move(position: &mut Position, undo: Undo) {
     let mv = undo.mv;
     position.set_side_to_move(undo.prev_side);
     match mv.flag() {
