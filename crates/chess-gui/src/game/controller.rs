@@ -388,7 +388,7 @@ impl GameController {
 
     /// 当前是否将军
     pub fn is_check(&self) -> bool {
-        self.game.is_check().unwrap_or(false)
+        self.game.is_check()
     }
 
     /// 对局是否结束（分析模式下永不结束）
@@ -397,7 +397,7 @@ impl GameController {
         if self.mode == GameMode::Analysis {
             return false;
         }
-        self.game.is_game_over().unwrap_or(false)
+        self.game.is_game_over()
     }
 
     /// 对局结果字符串（"1-0", "0-1", "1/2-1/2", "*"）

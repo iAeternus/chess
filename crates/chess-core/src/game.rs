@@ -71,31 +71,31 @@ impl Game {
     }
 
     /// 检测游戏是否结束
-    pub fn is_game_over(&mut self) -> Result<bool> {
-        Ok(self.is_checkmate()? || self.is_stalemate()?)
+    pub fn is_game_over(&mut self) -> bool {
+        self.is_checkmate() || self.is_stalemate()
     }
 
     /// 检测是否将军
-    pub fn is_check(&self) -> Result<bool> {
+    pub fn is_check(&self) -> bool {
         let side = self.position.side_to_move();
         let king = self
             .position
             .board()
             .piece_kind(side, PieceKind::King)
             .lsb()
-            .ok_or(ChessError::NoKing(side))?;
+            .expect(&format!("missing king for {}", side));
 
-        Ok(is_square_attacked(self.position.board(), king, side.flip()))
+        is_square_attacked(self.position.board(), king, side.flip())
     }
 
     /// 检测是否将杀
-    pub fn is_checkmate(&mut self) -> Result<bool> {
-        Ok(self.is_check()? && self.legal_moves().is_empty())
+    pub fn is_checkmate(&mut self) -> bool {
+        self.is_check() && self.legal_moves().is_empty()
     }
 
     /// 检测是否逼和
-    pub fn is_stalemate(&mut self) -> Result<bool> {
-        Ok(!self.is_check()? && self.legal_moves().is_empty())
+    pub fn is_stalemate(&mut self) -> bool {
+        !self.is_check() && self.legal_moves().is_empty()
     }
 
     /// 走法历史
@@ -246,7 +246,7 @@ mod tests {
         // 黑车沿 e 文件攻击白王
         // 白王处于将军状态
         let game = Game::from_fen("4k3/8/8/8/8/8/4r3/4K3 w - - 0 1").unwrap();
-        assert!(game.is_check().unwrap());
+        assert!(game.is_check());
     }
 
     #[test]
@@ -257,8 +257,8 @@ mod tests {
         // 黑王被将军，且无合法逃脱格
         // 形成将杀
         let mut game = Game::from_fen("7k/6Q1/5K2/8/8/8/8/8 b - - 0 1").unwrap();
-        assert!(game.is_checkmate().unwrap());
-        assert!(game.is_game_over().unwrap());
+        assert!(game.is_checkmate());
+        assert!(game.is_game_over());
     }
 
     #[test]
@@ -269,8 +269,8 @@ mod tests {
         // 黑王没有合法走法
         // 但当前没有被将军，因此为逼和
         let mut game = Game::from_fen("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1").unwrap();
-        assert!(game.is_stalemate().unwrap());
-        assert!(game.is_game_over().unwrap());
+        assert!(game.is_stalemate());
+        assert!(game.is_game_over());
     }
 
     #[test]

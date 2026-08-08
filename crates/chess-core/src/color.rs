@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum Color {
@@ -19,6 +21,15 @@ impl Color {
 impl From<Color> for usize {
     fn from(value: Color) -> Self {
         value as usize
+    }
+}
+
+impl Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Color::White => write!(f, "White"),
+            Color::Black => write!(f, "Black"),
+        }
     }
 }
 
