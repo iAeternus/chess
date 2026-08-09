@@ -1,7 +1,7 @@
 //! 棋盘背景渲染：外围填充、64格交替色、圆角边框
 
 use chess_core::Square;
-use egui::{Pos2, Rect, Stroke};
+use egui::{CornerRadius, Pos2, Rect, Stroke, StrokeKind};
 
 use crate::board::layout::BoardLayout;
 use crate::theme::ThemeColors;
@@ -24,7 +24,7 @@ impl BoardBackgroundRenderer {
         // 64 格
         for rank in 0..8u8 {
             for file in 0..8u8 {
-                let sq = Square::from_coord(file, rank).unwrap();
+                let sq = Square::from_coord(file, rank).unwrap(); // SAFETY: fille and rand is valid here
                 let r = layout.square_rect(sq, false); // 格子模式不随翻转变化
                 let bg = if (file + rank) % 2 == 0 {
                     colors.board_light
@@ -36,12 +36,12 @@ impl BoardBackgroundRenderer {
         }
 
         // 内框圆角描边
-        let rounding = egui::CornerRadius::same((layout.square_size * ROUNDING_RATIO) as u8);
+        let rounding = CornerRadius::same((layout.square_size * ROUNDING_RATIO) as u8);
         painter.rect_stroke(
             layout.board_rect_local(),
             rounding,
             Stroke::new(layout.square_size * 0.04, colors.bg),
-            egui::StrokeKind::Middle,
+            StrokeKind::Middle,
         );
     }
 }

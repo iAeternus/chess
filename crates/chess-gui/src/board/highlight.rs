@@ -1,7 +1,7 @@
 //! 高亮渲染：最后一步、将军光晕、选中、拖拽来源、合法走法提示
 
 use chess_core::MoveFlag;
-use egui::{Color32, Stroke};
+use egui::{Color32, Mesh, Stroke, epaint};
 
 use crate::board::layout::BoardLayout;
 use crate::board::state::BoardState;
@@ -33,18 +33,9 @@ impl HighlightRenderer {
             }
         }
 
-        // 将军光晕（Lichess 风格：5 层同心圆模拟径向渐变）
+        // 将军光晕
         if let Some(king_sq) = state.king_in_check {
-            let c = layout.square_center(king_sq, flipped);
-
-            let mid_fade = Color32::from_rgba_premultiplied(200, 0, 0, 120);
-            let outer_fade = Color32::from_rgba_premultiplied(180, 0, 0, 40);
-
-            painter.circle_filled(c, sq * 0.95, colors.check_glow_outer);
-            painter.circle_filled(c, sq * 0.85, outer_fade);
-            painter.circle_filled(c, sq * 0.70, mid_fade);
-            painter.circle_filled(c, sq * 0.50, colors.check_glow_mid);
-            painter.circle_filled(c, sq * 0.30, colors.check_glow_inner);
+            Self::paint_check_glow(painter, layout.square_center(king_sq, flipped), sq);
         }
 
         // 选中高亮
@@ -75,5 +66,39 @@ impl HighlightRenderer {
                 painter.circle_filled(c, sq * 0.15, colors.legal_move_dot);
             }
         }
+    }
+
+    /// 绘制将军光晕
+    ///
+    /// Lichess 风格：
+    /// - 中心红色较强
+    /// - 外圈渐隐
+    /// - 半径小于棋格，避免覆盖整个格子
+    fn paint_check_glow(painter: &egui::Painter, center: egui::Pos2, square_size: f32) {
+        let radius = square_size * 0.48;
+        let segments = 64;
+        let mut mesh = Mesh::default();
+
+        // 中心：强红色
+        mesh.vertices.push(epaint::Vertex {
+            pos: center,
+            uv: egui::epaint::WHITE_UV,
+            color: Color32::from_rgba_unmultiplied(220, 0, 0, 140),
+        });
+
+        // 外圈：完全透明
+        for i in 0..=segments {
+            let angle = i as f32 / segments as f32 * std::f32::consts::TAU;
+            let pos = center + egui::vec2(angle.cos(), angle.sin()) * radius;
+            mesh.vertices.push(epaint::Vertex {
+                pos,
+                uv: egui::epaint::WHITE_UV,
+                color: Color32::from_rgba_unmultiplied(220, 0, 0, 0),
+            });
+        }
+        for i in 0..segments {
+            mesh.indices.extend([0, (i + 1) as u32, (i + 2) as u32]);
+        }
+        painter.add(egui::Shape::mesh(mesh));
     }
 }
