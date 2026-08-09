@@ -43,8 +43,16 @@ impl BoardRenderer {
     ) {
         BoardBackgroundRenderer::paint(painter, layout, &self.colors);
         HighlightRenderer::paint(painter, layout, state, &self.colors, flipped);
-        ArrowRenderer::paint(painter, layout, &state.arrows, flipped);
         PieceRenderer::paint(painter, layout, state, textures, flipped);
+        if !state.arrows.is_empty() {
+            ArrowRenderer::paint(
+                painter,
+                layout,
+                &state.arrows,
+                state.arrow_preview.as_ref(),
+                flipped,
+            );
+        }
         CoordinateRenderer::paint(painter, layout, &self.colors, flipped);
     }
 }

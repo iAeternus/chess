@@ -4,11 +4,11 @@
 
 use chess_ai::{ChessEngine, MiniMaxEngine, RandomEngine};
 use chess_core::{Color, Piece, Square};
-use egui::{Align2, Pos2};
+use egui::{Align2, Color32, Pos2};
 
 use crate::board::chess_board::{BoardEvent, ChessBoard};
 use crate::board::renderer::BoardRenderer;
-use crate::board::state::BoardState;
+use crate::board::state::{BoardArrow, BoardState};
 use crate::constants::PROMOTION_PIECES;
 use crate::game::controller::{GameController, GameMode};
 use crate::panel::engine_info::{EngineInfo, EngineInfoPanel};
@@ -23,24 +23,31 @@ pub struct ChessApp {
     piece_textures: PieceTextureManager,
     theme: AppTheme,
 
-    // 面板
+    /// 走法列表面板
     move_list_panel: MoveListPanel,
+    /// 引擎信息面板
     engine_info_panel: EngineInfoPanel,
+    /// 工具栏
     toolbar: Toolbar,
 
-    // 状态
+    /// 状态
     status_message: String,
 
-    // 棋盘翻转（黑方视角）
+    /// 棋盘翻转（黑方视角）
     flipped: bool,
 
-    // 拖拽：(棋子, 来源格, painter-local 鼠标位置)
+    /// 拖拽：(棋子, 来源格, painter-local 鼠标位置)
     drag: Option<(Piece, Square, Pos2)>,
 
-    // 升变待选
+    /// 分析模式箭头
+    arrows: Vec<BoardArrow>,
+    /// 当前右键拖动预览
+    arrow_preview: Option<BoardArrow>,
+
+    /// 升变待选
     pending_promotion: Option<(Square, Square)>,
 
-    // HumanVsAI: 引擎选择
+    /// HumanVsAI: 引擎选择
     selected_engine_index: usize,
 }
 
@@ -64,6 +71,8 @@ impl ChessApp {
             status_message: String::from("White to move"),
             flipped: false,
             drag: None,
+            arrows: Vec::new(),
+            arrow_preview: None,
             pending_promotion: None,
             selected_engine_index: 0,
         }
@@ -104,7 +113,8 @@ impl ChessApp {
             last_move: self.controller.last_move(),
             king_in_check,
             drag: self.drag,
-            arrows: Vec::new(), // TODO: 分析模式箭头
+            arrows: self.arrows.clone(),
+            arrow_preview: self.arrow_preview.clone(),
         }
     }
 
@@ -371,6 +381,22 @@ impl ChessApp {
                     BoardEvent::MoveMade(_) => {}
                     BoardEvent::PromotionNeeded { from, to } => {
                         self.pending_promotion = Some((from, to));
+                    }
+                    BoardEvent::ArrowDrawn { from, to } => {
+                        self.arrow_preview = None;
+
+                        self.arrows.push(BoardArrow {
+                            from,
+                            to,
+                            color: egui::Color32::from_rgba_unmultiplied(0, 170, 0, 160),
+                        });
+                    }
+                    BoardEvent::ArrowPreview { from, to } => {
+                        self.arrow_preview = to.map(|to| BoardArrow {
+                            from,
+                            to,
+                            color: egui::Color32::from_rgba_unmultiplied(0, 180, 0, 100),
+                        });
                     }
                 }
             }

@@ -36,6 +36,9 @@ pub struct BoardState {
 
     /// 用户绘制的箭头（分析模式）
     pub arrows: Vec<BoardArrow>,
+
+    /// 当前正在拖动的箭头预览
+    pub arrow_preview: Option<BoardArrow>,
 }
 
 impl BoardState {
@@ -50,6 +53,7 @@ impl BoardState {
             king_in_check: None,
             drag: None,
             arrows: Vec::new(),
+            arrow_preview: None,
         }
     }
 }

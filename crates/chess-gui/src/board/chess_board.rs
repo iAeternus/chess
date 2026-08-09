@@ -4,7 +4,7 @@
 //! 作为独立组件，可嵌入任意 egui 布局。
 
 use chess_core::{Move, Piece, Square};
-use egui::{Pos2, Sense, Vec2};
+use egui::{PointerButton, Pos2, Sense, Vec2};
 
 use crate::board::layout::BoardLayout;
 use crate::board::renderer::BoardRenderer;
@@ -21,6 +21,10 @@ pub enum BoardEvent {
     MoveMade(Move),
     /// 需要选择升变棋子
     PromotionNeeded { from: Square, to: Square },
+    /// 分析模式绘制箭头
+    ArrowDrawn { from: Square, to: Square },
+    /// 分析模式箭头预览
+    ArrowPreview { from: Square, to: Option<Square> },
 }
 
 /// ChessBoard::show() 的返回值
@@ -40,6 +44,9 @@ pub struct ChessBoardResponse {
 pub struct ChessBoard {
     renderer: BoardRenderer,
     flipped: bool,
+
+    /// 右键箭头起点
+    arrow_start: Option<Square>,
 }
 
 impl ChessBoard {
@@ -48,6 +55,7 @@ impl ChessBoard {
         Self {
             renderer,
             flipped: false,
+            arrow_start: None,
         }
     }
 
@@ -96,7 +104,7 @@ impl ChessBoard {
         let sense = if mode == GameMode::Replay {
             Sense::hover()
         } else {
-            Sense::click_and_drag()
+            Sense::click().union(Sense::drag())
         };
         let (response, painter) = ui.allocate_painter(Vec2::new(side, side), sense);
 
@@ -116,6 +124,7 @@ impl ChessBoard {
             ctx,
             mode,
             self.flipped,
+            &mut self.arrow_start,
         );
 
         ChessBoardResponse {
@@ -134,11 +143,43 @@ impl ChessBoard {
         ctx: &egui::Context,
         mode: GameMode,
         flipped: bool,
+        arrow_start: &mut Option<Square>,
     ) -> Vec<BoardEvent> {
         let mut events = Vec::new();
 
+        if mode == GameMode::Analysis {
+            // 开始右键箭头
+            if response.drag_started_by(PointerButton::Secondary)
+                && let Some(pos) = response.interact_pointer_pos()
+                && let Some(sq) = layout.pos_to_square(pos, flipped)
+            {
+                *arrow_start = Some(sq);
+            }
+
+            // 移动预览
+            if response.dragged_by(PointerButton::Secondary)
+                && let Some(from) = *arrow_start
+                && let Some(pos) = response.interact_pointer_pos()
+            {
+                let to = layout.pos_to_square(pos, flipped);
+
+                events.push(BoardEvent::ArrowPreview { from, to });
+
+                ctx.request_repaint();
+            }
+
+            // 松开保存
+            if response.drag_stopped_by(PointerButton::Secondary)
+                && let Some(from) = arrow_start.take()
+                && let Some(pos) = response.interact_pointer_pos()
+                && let Some(to) = layout.pos_to_square(pos, flipped)
+            {
+                events.push(BoardEvent::ArrowDrawn { from, to });
+            }
+        }
+
         // 拖拽开始
-        if response.drag_started()
+        if response.drag_started_by(PointerButton::Primary)
             && let Some(pos) = response.interact_pointer_pos()
             && let Some(sq) = layout.pos_to_square(pos, flipped)
         {
@@ -157,7 +198,7 @@ impl ChessBoard {
         }
 
         // 拖拽移动
-        if response.dragged()
+        if response.dragged_by(PointerButton::Primary)
             && let Some(pos) = response.interact_pointer_pos()
             && let Some((_piece, _from, drag_pos)) = drag
         {
@@ -166,7 +207,7 @@ impl ChessBoard {
         }
 
         // 拖拽释放
-        if response.drag_stopped()
+        if response.drag_stopped_by(PointerButton::Primary)
             && let Some((_piece, _from, pos)) = drag.take()
         {
             if let Some(target) = layout.pos_to_square(pos, flipped) {
@@ -179,7 +220,7 @@ impl ChessBoard {
         }
 
         // 点击
-        if response.clicked()
+        if response.clicked_by(PointerButton::Primary)
             && let Some(local) = response.interact_pointer_pos()
             && let Some(sq) = layout.pos_to_square(local, flipped)
         {
