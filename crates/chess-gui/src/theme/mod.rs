@@ -32,7 +32,6 @@ pub struct ThemeColors {
 
     // 将军光晕（三层径向渐变）
     pub check_glow_inner: Color32,
-    pub check_glow_mid: Color32,
     pub check_glow_outer: Color32,
 
     // 选中高亮
@@ -73,9 +72,8 @@ impl AppTheme {
                 coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
                 // Lichess 风格将军光晕：中心亮红 -> 边缘完全透明
-                check_glow_inner: Color32::from_rgb(255, 0, 0), // 0%: 实心亮红
-                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200), // 25%: 暗红半透明
-                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0), // 89%: 完全透明
+                check_glow_inner: Color32::from_rgba_unmultiplied(220, 0, 0, 140),
+                check_glow_outer: Color32::from_rgba_unmultiplied(220, 0, 0, 0),
 
                 selected_highlight: Color32::from_rgba_premultiplied(100, 180, 100, 140),
                 legal_move_dot: Color32::from_rgba_premultiplied(0, 0, 0, 50),
@@ -98,9 +96,8 @@ impl AppTheme {
                 coord_dark: Color32::from_rgba_premultiplied(80, 100, 60, 180),
 
                 // Lichess 风格将军光晕：中心亮红 -> 边缘完全透明
-                check_glow_inner: Color32::from_rgb(255, 0, 0), // 0%: 实心亮红
-                check_glow_mid: Color32::from_rgba_premultiplied(231, 0, 0, 200), // 25%: 暗红半透明
-                check_glow_outer: Color32::from_rgba_premultiplied(169, 0, 0, 0), // 89%: 完全透明
+                check_glow_inner: Color32::from_rgba_unmultiplied(220, 0, 0, 140),
+                check_glow_outer: Color32::from_rgba_unmultiplied(220, 0, 0, 0),
 
                 selected_highlight: Color32::from_rgba_premultiplied(100, 180, 100, 140),
                 legal_move_dot: Color32::from_rgba_premultiplied(0, 0, 0, 40),

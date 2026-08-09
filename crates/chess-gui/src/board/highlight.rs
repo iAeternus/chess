@@ -35,7 +35,7 @@ impl HighlightRenderer {
 
         // 将军光晕
         if let Some(king_sq) = state.king_in_check {
-            Self::paint_check_glow(painter, layout.square_center(king_sq, flipped), sq);
+            Self::paint_check_glow(painter, layout.square_center(king_sq, flipped), sq, colors);
         }
 
         // 选中高亮
@@ -74,7 +74,12 @@ impl HighlightRenderer {
     /// - 中心红色较强
     /// - 外圈渐隐
     /// - 半径小于棋格，避免覆盖整个格子
-    fn paint_check_glow(painter: &egui::Painter, center: egui::Pos2, square_size: f32) {
+    fn paint_check_glow(
+        painter: &egui::Painter,
+        center: egui::Pos2,
+        square_size: f32,
+        colors: &ThemeColors,
+    ) {
         let radius = square_size * 0.48;
         let segments = 64;
         let mut mesh = Mesh::default();
@@ -83,7 +88,7 @@ impl HighlightRenderer {
         mesh.vertices.push(epaint::Vertex {
             pos: center,
             uv: egui::epaint::WHITE_UV,
-            color: Color32::from_rgba_unmultiplied(220, 0, 0, 140),
+            color: colors.check_glow_inner,
         });
 
         // 外圈：完全透明
@@ -93,7 +98,7 @@ impl HighlightRenderer {
             mesh.vertices.push(epaint::Vertex {
                 pos,
                 uv: egui::epaint::WHITE_UV,
-                color: Color32::from_rgba_unmultiplied(220, 0, 0, 0),
+                color: colors.check_glow_outer,
             });
         }
         for i in 0..segments {
