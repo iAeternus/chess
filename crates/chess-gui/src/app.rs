@@ -139,6 +139,10 @@ impl ChessApp {
             if i.key_pressed(egui::Key::N) && self.controller.mode() != GameMode::Replay {
                 self.controller.new_game();
             }
+            if i.key_pressed(egui::Key::Escape) {
+                self.arrows.clear();
+                self.arrow_preview = None;
+            }
         });
     }
 
@@ -382,21 +386,32 @@ impl ChessApp {
                     BoardEvent::PromotionNeeded { from, to } => {
                         self.pending_promotion = Some((from, to));
                     }
-                    BoardEvent::ArrowDrawn { from, to } => {
+                    BoardEvent::ArrowToggle { from, to } => {
+                        // 松开鼠标后，预览消失
                         self.arrow_preview = None;
+                        let index = self.arrows.iter().position(|a| {
+                            // 正向相同，反向也认为相同
+                            (a.from == from && a.to == to) || (a.from == to && a.to == from)
+                        });
 
-                        self.arrows.push(BoardArrow {
-                            from,
-                            to,
-                            color: egui::Color32::from_rgba_unmultiplied(0, 170, 0, 160),
-                        });
+                        if let Some(index) = index {
+                            // 已存在 -> 删除
+                            self.arrows.remove(index);
+                        } else {
+                            // 不存在 -> 添加
+                            self.arrows.push(BoardArrow {
+                                from,
+                                to,
+                                color: egui::Color32::from_rgba_unmultiplied(0, 200, 0, 120),
+                            });
+                        }
                     }
-                    BoardEvent::ArrowPreview { from, to } => {
-                        self.arrow_preview = to.map(|to| BoardArrow {
-                            from,
-                            to,
-                            color: egui::Color32::from_rgba_unmultiplied(0, 180, 0, 100),
-                        });
+                    BoardEvent::ArrowPreview { arrow } => {
+                        self.arrow_preview = arrow;
+                    }
+                    BoardEvent::ClearArrows => {
+                        self.arrows.clear();
+                        self.arrow_preview = None;
                     }
                 }
             }
