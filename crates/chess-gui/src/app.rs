@@ -4,7 +4,7 @@
 
 use chess_ai::{ChessEngine, MiniMaxEngine, RandomEngine};
 use chess_core::{Color, Piece, Square};
-use egui::{Align2, Color32, Pos2};
+use egui::{Align2, Pos2};
 
 use crate::board::chess_board::{BoardEvent, ChessBoard};
 use crate::board::renderer::BoardRenderer;
@@ -363,7 +363,7 @@ impl ChessApp {
             });
     }
 
-    /// 棋盘区域
+    /// 棋盘区域 TODO: 第一次绘制的箭头没有拖动实时预览，保存第一个箭头后续绘制箭头才会有预览
     fn show_board(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             let mode = self.controller.mode();
