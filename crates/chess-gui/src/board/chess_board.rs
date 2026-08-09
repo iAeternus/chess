@@ -86,12 +86,12 @@ impl ChessBoard {
         ctx: &egui::Context,
         mode: GameMode,
     ) -> ChessBoardResponse {
-        // ── 1. 尺寸计算 ──
+        // 1. 尺寸计算
         // 基于此 Ui 的可用空间（即父布局分配的空间），计算最佳棋盘尺寸
         let available = ui.available_size();
         let side = Self::optimal_side(available);
 
-        // ── 2. 空间分配 ──
+        // 2. 空间分配
         // 使用 egui 标准布局机制：allocate_painter 保留一个 side×side 的方形区域
         let sense = if mode == GameMode::Replay {
             Sense::hover()
@@ -100,16 +100,22 @@ impl ChessBoard {
         };
         let (response, painter) = ui.allocate_painter(Vec2::new(side, side), sense);
 
-        // ── 3. 构建布局 ──
+        // 3. 构建布局
         let layout = BoardLayout::from_allocated_rect(response.rect);
 
-        // ── 4. 渲染 ──
+        // 4. 渲染
         self.renderer
             .paint(&painter, &layout, state, textures, self.flipped);
 
-        // ── 5. 交互处理 ──
+        // 5. 交互处理
         let events = Self::handle_interaction(
-            &response, &layout, controller, drag, ctx, mode, self.flipped,
+            &response,
+            &layout,
+            controller,
+            drag,
+            ctx,
+            mode,
+            self.flipped,
         );
 
         ChessBoardResponse {
@@ -119,8 +125,7 @@ impl ChessBoard {
         }
     }
 
-    // ── 交互逻辑 ──
-
+    /// 交互逻辑
     fn handle_interaction(
         response: &egui::Response,
         layout: &BoardLayout,
@@ -165,9 +170,7 @@ impl ChessBoard {
             && let Some((_piece, _from, pos)) = drag.take()
         {
             if let Some(target) = layout.pos_to_square(pos, flipped) {
-                if let Some(event) =
-                    Self::execute_drag_drop(controller, target)
-                {
+                if let Some(event) = Self::execute_drag_drop(controller, target) {
                     events.push(event);
                 }
             } else {
@@ -195,10 +198,7 @@ impl ChessBoard {
     }
 
     /// 执行拖拽释放：检查目标格子是否有合法走法，处理升变判断
-    fn execute_drag_drop(
-        controller: &mut GameController,
-        target: Square,
-    ) -> Option<BoardEvent> {
+    fn execute_drag_drop(controller: &mut GameController, target: Square) -> Option<BoardEvent> {
         let legal_moves = controller.legal_moves_for_selected();
         let matching: Vec<_> = legal_moves
             .iter()

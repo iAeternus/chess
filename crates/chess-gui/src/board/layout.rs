@@ -53,8 +53,14 @@ impl BoardLayout {
         let square_size = outer_side / (8.0 + COORD_MARGIN);
         let coord_margin = square_size * COORD_MARGIN / 2.0;
         let board_rect = Rect::from_min_max(
-            Pos2::new(outer_rect.min.x + coord_margin, outer_rect.min.y + coord_margin),
-            Pos2::new(outer_rect.max.x - coord_margin, outer_rect.max.y - coord_margin),
+            Pos2::new(
+                outer_rect.min.x + coord_margin,
+                outer_rect.min.y + coord_margin,
+            ),
+            Pos2::new(
+                outer_rect.max.x - coord_margin,
+                outer_rect.max.y - coord_margin,
+            ),
         );
 
         Self {
@@ -87,7 +93,10 @@ impl BoardLayout {
         let x = board.min.x + f as f32 * self.square_size;
         // screen y 向下增长，rank 0 在底部，rank 7 在顶部
         let y = board.min.y + (7 - r) as f32 * self.square_size;
-        Rect::from_min_size(Pos2::new(x, y), Vec2::new(self.square_size, self.square_size))
+        Rect::from_min_size(
+            Pos2::new(x, y),
+            Vec2::new(self.square_size, self.square_size),
+        )
     }
 
     /// 格子中心在 painter-local 坐标系下的坐标

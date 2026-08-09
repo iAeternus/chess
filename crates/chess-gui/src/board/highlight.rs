@@ -69,11 +69,7 @@ impl HighlightRenderer {
 
             if is_capture {
                 // 空心圆环
-                painter.circle_stroke(
-                    c,
-                    sq * 0.42,
-                    Stroke::new(sq * 0.06, colors.capture_ring),
-                );
+                painter.circle_stroke(c, sq * 0.42, Stroke::new(sq * 0.06, colors.capture_ring));
             } else {
                 // 实心圆点
                 painter.circle_filled(c, sq * 0.15, colors.legal_move_dot);

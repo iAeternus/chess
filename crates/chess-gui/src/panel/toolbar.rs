@@ -24,7 +24,12 @@ impl Toolbar {
         ui.horizontal(|ui| {
             let buttons = [
                 ("↻ Flip", "Flip Board (R)", !false, ToolbarAction::FlipBoard),
-                ("✦ New", "New Game (N)", !replay_mode, ToolbarAction::NewGame),
+                (
+                    "✦ New",
+                    "New Game (N)",
+                    !replay_mode,
+                    ToolbarAction::NewGame,
+                ),
                 ("📂 Open", "Open PGN file", true, ToolbarAction::OpenPgn),
                 ("💾 Save", "Save PGN file", true, ToolbarAction::SavePgn),
             ];
