@@ -81,7 +81,7 @@ impl AppTheme {
                 bg: Color32::from_rgb(30, 30, 30),
                 surface: Color32::from_rgb(40, 40, 40),
                 text: Color32::from_rgb(220, 220, 220),
-                accent: Color32::from_rgb(100, 150, 255),
+                accent: Color32::from_rgb(75, 75, 85),
                 widget_inactive_bg: Color32::from_rgb(55, 55, 60),
                 widget_hovered_bg: Color32::from_rgb(70, 70, 78),
                 ..Default::default()
@@ -91,9 +91,10 @@ impl AppTheme {
                 bg: Color32::from_rgb(245, 245, 245),
                 surface: Color32::from_rgb(255, 255, 255),
                 text: Color32::from_rgb(30, 30, 30),
-                accent: Color32::from_rgb(60, 100, 200),
+                accent: Color32::from_rgb(210, 210, 220),
                 widget_inactive_bg: Color32::from_rgb(215, 215, 220),
                 widget_hovered_bg: Color32::from_rgb(195, 195, 205),
+                coord_light: Color32::from_rgba_unmultiplied(100, 70, 40, 220),
                 ..Default::default()
             },
         }

@@ -21,6 +21,13 @@ impl CoordinateRenderer {
         let board = layout.board_rect_local();
         let font = FontId::monospace(layout.square_size * 0.16);
 
+        // 根据主题选择坐标颜色：Dark 用浅色，Light 用深色
+        let coord_color = if colors.bg.r() < 128 {
+            colors.coord_light
+        } else {
+            colors.coord_dark
+        };
+
         for i in 0..8u8 {
             let ri = if flipped { i } else { 7 - i };
             let fi = if flipped { 7 - i } else { i };
@@ -33,7 +40,7 @@ impl CoordinateRenderer {
                 Align2::CENTER_CENTER,
                 (i + 1).to_string(),
                 font.clone(),
-                colors.coord_light, // TODO: light主题下显示为白色
+                coord_color,
             );
 
             // 列号（a-h）：底部外边距水平居中
@@ -44,7 +51,7 @@ impl CoordinateRenderer {
                 Align2::CENTER_CENTER,
                 files[i as usize].to_string(),
                 font.clone(),
-                colors.coord_light, // TODO: light主题下显示为白色
+                coord_color,
             );
         }
     }
