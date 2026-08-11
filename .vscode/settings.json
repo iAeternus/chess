@@ -4,12 +4,14 @@
         "bitflags",
         "fullmove",
         "halfmove",
+        "Lichess",
         "makemove",
         "movegen",
         "perft",
         "queenside",
         "RNBQKBNR",
         "startpos",
+        "unmultiplied",
         "Zobrist"
     ]
 }

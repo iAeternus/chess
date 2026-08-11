@@ -33,7 +33,7 @@ impl CoordinateRenderer {
                 Align2::CENTER_CENTER,
                 (i + 1).to_string(),
                 font.clone(),
-                colors.coord_light,
+                colors.coord_light, // TODO: light主题下显示为白色
             );
 
             // 列号（a-h）：底部外边距水平居中
@@ -44,7 +44,7 @@ impl CoordinateRenderer {
                 Align2::CENTER_CENTER,
                 files[i as usize].to_string(),
                 font.clone(),
-                colors.coord_light,
+                colors.coord_light, // TODO: light主题下显示为白色
             );
         }
     }

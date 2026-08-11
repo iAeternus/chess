@@ -6,6 +6,7 @@ use egui::{Pos2, Rect};
 use crate::board::layout::BoardLayout;
 use crate::board::state::BoardState;
 use crate::piece::texture::PieceTextureManager;
+use crate::theme::ThemeColors;
 
 /// 棋子占格子的比例
 const PIECE_RATIO: f32 = 0.90;
@@ -20,6 +21,7 @@ impl PieceRenderer {
         state: &BoardState,
         textures: &PieceTextureManager,
         flipped: bool,
+        colors: &ThemeColors,
     ) {
         let sq_size = layout.square_size;
 
@@ -52,7 +54,7 @@ impl PieceRenderer {
                 Pos2::new(sc.x + ghost_half, sc.y + ghost_half),
             );
             let tex = textures.get(piece.color, piece.kind);
-            let ghost_tint = egui::Color32::from_rgba_premultiplied(255, 255, 255, 77);
+            let ghost_tint = colors.drag_ghost_tint;
             painter.image(
                 tex.id(),
                 ghost_rect,

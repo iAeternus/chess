@@ -1,5 +1,7 @@
 //! 引擎信息面板：显示引擎名称、深度、评估、最佳走法。
 
+use crate::theme::ThemeColors;
+
 /// 引擎分析信息（后续由 engine_bridge 填充）
 #[derive(Debug, Clone, Default)]
 pub struct EngineInfo {
@@ -26,7 +28,7 @@ impl EngineInfoPanel {
         Self
     }
 
-    pub fn show(&self, ui: &mut egui::Ui, info: &EngineInfo) {
+    pub fn show(&self, ui: &mut egui::Ui, info: &EngineInfo, colors: &ThemeColors) {
         ui.heading("Engine");
 
         // 引擎名称
@@ -36,7 +38,7 @@ impl EngineInfoPanel {
             ui.label(
                 egui::RichText::new("No engine loaded")
                     .size(14.0)
-                    .color(egui::Color32::from_rgb(150, 150, 150)),
+                    .color(colors.panel_dim_text),
             );
             return;
         }
@@ -87,7 +89,7 @@ impl EngineInfoPanel {
             ui.label(
                 egui::RichText::new(meta_parts.join(" · "))
                     .size(13.0)
-                    .color(egui::Color32::from_rgb(150, 150, 150)),
+                    .color(colors.panel_dim_text),
             );
         }
 
@@ -97,7 +99,7 @@ impl EngineInfoPanel {
             ui.label(
                 egui::RichText::new("PV:")
                     .size(13.0)
-                    .color(egui::Color32::from_rgb(150, 150, 150)),
+                    .color(colors.panel_dim_text),
             );
             ui.label(
                 egui::RichText::new(info.pv.join(" "))
@@ -111,7 +113,7 @@ impl EngineInfoPanel {
             ui.label(
                 egui::RichText::new("No analysis data available")
                     .size(13.0)
-                    .color(egui::Color32::from_rgb(150, 150, 150)),
+                    .color(colors.panel_dim_text),
             );
         }
     }

@@ -250,11 +250,12 @@ impl ChessApp {
                 ui.ctx().set_style(style);
 
                 // 引擎信息
+                let colors = self.theme.colors();
                 let engine_info = EngineInfo {
                     name: self.controller.engine_name().map(|s| s.to_string()),
                     ..Default::default()
                 };
-                self.engine_info_panel.show(ui, &engine_info);
+                self.engine_info_panel.show(ui, &engine_info, &colors);
                 ui.separator();
 
                 // 模式与位置
@@ -352,6 +353,7 @@ impl ChessApp {
                     ui.available_height(),
                     can_back,
                     can_forward,
+                    &colors,
                     |action| match action {
                         MoveListAction::JumpToPly(ply) => self.controller.go_to_ply(ply),
                         MoveListAction::GoToStart => self.controller.go_to_start(),
@@ -380,6 +382,8 @@ impl ChessApp {
                 mode,
             );
 
+            let colors = self.theme.colors();
+            
             for event in response.events {
                 match event {
                     BoardEvent::MoveMade(_) => {}
@@ -402,12 +406,15 @@ impl ChessApp {
                             self.arrows.push(BoardArrow {
                                 from,
                                 to,
-                                color: egui::Color32::from_rgba_unmultiplied(0, 200, 0, 120),
+                                color: colors.arrow_color,
                             });
                         }
                     }
                     BoardEvent::ArrowPreview { arrow } => {
-                        self.arrow_preview = arrow;
+                        self.arrow_preview = arrow.map(|mut arrow| {
+                            arrow.color = colors.arrow_preview_color;
+                            arrow
+                        });
                     }
                     BoardEvent::ClearArrows => {
                         self.arrows.clear();

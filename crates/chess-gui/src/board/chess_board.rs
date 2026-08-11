@@ -127,6 +127,7 @@ impl ChessBoard {
             mode,
             self.flipped,
             &mut self.arrow_drag,
+            self.renderer.colors(),
         );
 
         ChessBoardResponse {
@@ -146,6 +147,7 @@ impl ChessBoard {
         mode: GameMode,
         flipped: bool,
         arrow_drag: &mut Option<BoardArrow>,
+        colors: &ThemeColors,
     ) -> Vec<BoardEvent> {
         let mut events = Vec::new();
 
@@ -158,7 +160,7 @@ impl ChessBoard {
                 *arrow_drag = Some(BoardArrow {
                     from,
                     to: from,
-                    color: egui::Color32::from_rgba_unmultiplied(0, 200, 0, 100),
+                    color: colors.arrow_drag_color,
                 });
 
                 ctx.request_repaint();

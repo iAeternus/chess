@@ -1,7 +1,7 @@
 //! 高亮渲染：最后一步、将军光晕、选中、拖拽来源、合法走法提示
 
 use chess_core::MoveFlag;
-use egui::{Color32, Mesh, Stroke, epaint};
+use egui::{Mesh, Stroke, epaint};
 
 use crate::board::layout::BoardLayout;
 use crate::board::state::BoardState;

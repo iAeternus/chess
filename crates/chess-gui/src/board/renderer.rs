@@ -26,6 +26,11 @@ impl BoardRenderer {
         self.colors = colors;
     }
 
+    /// 获取当前颜色配置的引用
+    pub fn colors(&self) -> &ThemeColors {
+        &self.colors
+    }
+
     /// 绘制全部棋盘元素。
     ///
     /// * `painter` — 已通过 `ui.allocate_painter()` 分配的 Painter（原点在 outer_rect.min）
@@ -43,7 +48,7 @@ impl BoardRenderer {
     ) {
         BoardBackgroundRenderer::paint(painter, layout, &self.colors);
         HighlightRenderer::paint(painter, layout, state, &self.colors, flipped);
-        PieceRenderer::paint(painter, layout, state, textures, flipped);
+        PieceRenderer::paint(painter, layout, state, textures, flipped, &self.colors);
         if !state.arrows.is_empty() {
             ArrowRenderer::paint(
                 painter,

@@ -1,10 +1,11 @@
 //! 走法列表面板：顶部导航按钮 + SAN 格式走法表格。
 
 use chess_core::{Color, Move, PieceKind};
-use egui::{Color32, ScrollArea, Sense};
+use egui::{ScrollArea, Sense};
 use egui_extras::{Column, TableBuilder};
 
 use crate::constants::PIECE_ICONS;
+use crate::theme::ThemeColors;
 
 /// 走法列表操作
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,11 +18,6 @@ pub enum MoveListAction {
     GoForward,
     GoToEnd,
 }
-
-/// 当前走法高亮背景色
-const HIGHLIGHT_BG: Color32 = Color32::from_rgba_premultiplied(100, 150, 255, 60);
-/// 走法编号颜色
-const DIM_COLOR: Color32 = Color32::from_rgb(130, 130, 130);
 
 pub struct MoveListPanel;
 
@@ -43,6 +39,7 @@ impl MoveListPanel {
         max_height: f32,
         can_back: bool,
         can_forward: bool,
+        colors: &ThemeColors,
         mut on_action: impl FnMut(MoveListAction),
     ) {
         ui.heading("Moves");
@@ -90,7 +87,7 @@ impl MoveListPanel {
                             ui.with_layout(
                                 egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
                                 |ui| {
-                                    ui.label(egui::RichText::new("#").color(DIM_COLOR).strong());
+                                    ui.label(egui::RichText::new("#").color(colors.move_list_dim_text).strong());
                                 },
                             );
                         });
@@ -130,7 +127,7 @@ impl MoveListPanel {
                                         |ui| {
                                             ui.label(
                                                 egui::RichText::new(format!("{move_num}."))
-                                                    .color(DIM_COLOR)
+                                                    .color(colors.move_list_dim_text)
                                                     .strong()
                                                     .size(17.0),
                                             );
@@ -146,7 +143,7 @@ impl MoveListPanel {
                                         san_list.get(white_idx).map(String::as_str).unwrap_or("??");
                                     let display = san_with_icon(san, Color::White);
 
-                                    if self.move_cell(ui, &display, current_ply == ply) {
+                                    if self.move_cell(ui, &display, current_ply == ply, colors) {
                                         on_action(MoveListAction::JumpToPly(ply));
                                     }
                                 });
@@ -162,7 +159,7 @@ impl MoveListPanel {
                                             .unwrap_or("??");
                                         let display = san_with_icon(san, Color::Black);
 
-                                        if self.move_cell(ui, &display, current_ply == ply) {
+                                        if self.move_cell(ui, &display, current_ply == ply, colors) {
                                             on_action(MoveListAction::JumpToPly(ply));
                                         }
                                     }
@@ -174,7 +171,13 @@ impl MoveListPanel {
     }
 
     /// 渲染单个走法单元格
-    fn move_cell(&self, ui: &mut egui::Ui, display: &str, is_current: bool) -> bool {
+    fn move_cell(
+        &self,
+        ui: &mut egui::Ui,
+        display: &str,
+        is_current: bool,
+        colors: &ThemeColors,
+    ) -> bool {
         let mut text = egui::RichText::new(display).size(16.0);
 
         if is_current {
@@ -183,9 +186,9 @@ impl MoveListPanel {
 
         let response = egui::Frame::NONE
             .fill(if is_current {
-                HIGHLIGHT_BG
+                colors.move_list_highlight_bg
             } else {
-                Color32::TRANSPARENT
+                egui::Color32::TRANSPARENT
             })
             .inner_margin(egui::Margin::symmetric(8, 4))
             .show(ui, |ui| {
