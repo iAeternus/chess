@@ -19,18 +19,7 @@ use arrayvec::ArrayVec;
 use chess_ai::ChessEngine;
 use chess_core::{Color, Game, Move, Position, Promotion, Result, Square};
 
-/// 对局模式
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GameMode {
-    /// 双人对战
-    HumanVsHuman,
-    /// 人类执白 vs AI 执黑
-    HumanVsAI,
-    /// 分析模式：自由走棋，无胜负判定（类似 Lichess Analysis Board）
-    Analysis,
-    /// 棋谱回放模式
-    Replay,
-}
+use crate::game::GameMode;
 
 /// 点击/选择结果
 #[derive(Debug)]
@@ -365,11 +354,6 @@ impl GameController {
             && self.engine.is_some()
             && self.game.side_to_move() != self.player_color
             && self.game.is_at_latest()
-    }
-
-    /// 引擎名称
-    pub fn engine_name(&self) -> Option<&str> {
-        self.engine.as_ref().map(|e| e.name())
     }
 
     /// 获取人类执棋颜色

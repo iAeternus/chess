@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp};
 
 use chess_core::{Color, Move, Position, generate_legal, make_move, unmake_move};
 
@@ -16,6 +16,14 @@ impl AlphaBetaEngine {
         Self { depth }
     }
 
+    // TODO: time_limit_ms: Option<u64> 限制搜索时间
+    // TODO: 搜索优化：
+    // 走法排序（MVV-LVA）
+    // 迭代加深
+    // 置换表
+    // 空着裁剪（Null Move Pruning）
+    // 杀手走法（Killer Moves）
+    // 历史启发（History Heuristic）
     pub fn alphabeta(
         position: &mut Position,
         mut alpha: i32,
@@ -70,10 +78,6 @@ impl AlphaBetaEngine {
 }
 
 impl ChessEngine for AlphaBetaEngine {
-    fn name(&self) -> &str {
-        "AlphaBeta Engine"
-    }
-
     fn search(&mut self, position: &Position) -> Option<Move> {
         let mut pos = position.clone();
         let moves = generate_legal(&mut pos);
@@ -110,16 +114,5 @@ impl ChessEngine for AlphaBetaEngine {
         }
 
         best_move
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn alphabeta_engine_name() {
-        let engine = AlphaBetaEngine::new(3);
-        assert_eq!(engine.name(), "AlphaBeta Engine");
     }
 }

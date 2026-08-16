@@ -1,10 +1,10 @@
-use std::cmp;
+use std::{cmp};
 
 use chess_core::{Color, Move, Position, generate_legal, make_move, unmake_move};
 
 use crate::{
     ChessEngine,
-    evaluation::{evaluate, terminal_score, score_if_gameover},
+    evaluation::{evaluate, score_if_gameover, terminal_score},
 };
 
 pub struct MiniMaxEngine {
@@ -62,10 +62,6 @@ impl MiniMaxEngine {
 }
 
 impl ChessEngine for MiniMaxEngine {
-    fn name(&self) -> &str {
-        "MiniMax Engine"
-    }
-
     fn search(&mut self, position: &Position) -> Option<Move> {
         let mut pos = position.clone();
         let moves = generate_legal(&mut pos);
@@ -102,16 +98,5 @@ impl ChessEngine for MiniMaxEngine {
         }
 
         best_move
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn minimax_engine_name() {
-        let engine = MiniMaxEngine::new(3);
-        assert_eq!(engine.name(), "MiniMax Engine");
     }
 }

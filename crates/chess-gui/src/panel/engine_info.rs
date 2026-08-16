@@ -2,7 +2,7 @@
 
 use crate::theme::ThemeColors;
 
-/// 引擎分析信息（后续由 engine_bridge 填充）
+/// 引擎分析信息
 #[derive(Debug, Clone, Default)]
 pub struct EngineInfo {
     pub name: Option<String>,

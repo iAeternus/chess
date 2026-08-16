@@ -1,8 +1,8 @@
-//! ChessApp — 应用主结构体。
+//! ChessApp — 应用主结构体
 //!
-//! 负责协调各个子系统：GameController、BoardRenderer、面板、纹理、交互。
+//! 负责协调各个子系统：GameController、BoardRenderer、面板、纹理、交互
 
-use chess_ai::{AlphaBetaEngine, ChessEngine, MiniMaxEngine, RandomEngine};
+use chess_ai::{ChessEngine, EngineKind};
 use chess_core::{Color, Piece, Square};
 use egui::{Align2, Pos2};
 
@@ -10,7 +10,7 @@ use crate::board::chess_board::{BoardEvent, ChessBoard};
 use crate::board::renderer::BoardRenderer;
 use crate::board::state::{BoardArrow, BoardState};
 use crate::constants::PROMOTION_PIECES;
-use crate::game::controller::{GameController, GameMode};
+use crate::game::{GameController, GameMode};
 use crate::panel::engine_info::{EngineInfo, EngineInfoPanel};
 use crate::panel::move_list::{MoveListAction, MoveListPanel};
 use crate::panel::toolbar::{Toolbar, ToolbarAction};
@@ -48,7 +48,7 @@ pub struct ChessApp {
     pending_promotion: Option<(Square, Square)>,
 
     /// HumanVsAI: 引擎选择
-    selected_engine_index: usize,
+    selected_engine_kind: EngineKind,
 }
 
 impl ChessApp {
@@ -74,7 +74,7 @@ impl ChessApp {
             arrows: Vec::new(),
             arrow_preview: None,
             pending_promotion: None,
-            selected_engine_index: 0,
+            selected_engine_kind: EngineKind::Random,
         }
     }
 
@@ -252,20 +252,16 @@ impl ChessApp {
                 // 引擎信息
                 let colors = self.theme.colors();
                 let engine_info = EngineInfo {
-                    name: self.controller.engine_name().map(|s| s.to_string()),
+                    // TODO: 未填充
+                    name: Some(self.selected_engine_kind.short_name()),
+                    depth: self.selected_engine_kind.depth(),
                     ..Default::default()
                 };
                 self.engine_info_panel.show(ui, &engine_info, &colors);
                 ui.separator();
 
                 // 模式与位置
-                let mode_text = match self.controller.mode() {
-                    GameMode::HumanVsHuman => "Mode: Human vs Human",
-                    GameMode::HumanVsAI => "Mode: Human vs AI",
-                    GameMode::Analysis => "Mode: Analysis",
-                    GameMode::Replay => "Mode: Replay",
-                };
-                ui.label(mode_text);
+                ui.label(self.controller.mode().to_string());
                 ui.label(format!(
                     "Ply: {}/{}",
                     self.controller.current_ply(),
@@ -279,25 +275,16 @@ impl ChessApp {
                     // 引擎选择
                     ui.horizontal(|ui| {
                         ui.label("Engine:");
-                        let engine_options = [
-                            "Random",
-                            "Minimax (depth 3)",
-                            "Minimax (depth 4)",
-                            "Minimax (depth 5)",
-                            "AlphaBeta (depth 3)",
-                            "AlphaBeta (depth 4)",
-                            "AlphaBeta (depth 5)",
-                        ];
                         let mut changed = false;
                         egui::ComboBox::from_id_salt("engine_select")
-                            .selected_text(engine_options[self.selected_engine_index])
+                            .selected_text(self.selected_engine_kind.to_string())
                             .show_ui(ui, |ui| {
-                                for (i, label) in engine_options.iter().enumerate() {
+                                for &kind in EngineKind::ALL.iter() {
                                     if ui
                                         .selectable_value(
-                                            &mut self.selected_engine_index,
-                                            i,
-                                            *label,
+                                            &mut self.selected_engine_kind,
+                                            kind,
+                                            kind.to_string(),
                                         )
                                         .clicked()
                                     {
@@ -503,23 +490,7 @@ impl ChessApp {
 
     /// 根据当前选中的引擎索引创建对应的引擎实例
     fn create_engine(&self) -> Box<dyn ChessEngine> {
-        match self.selected_engine_index {
-            0 => Box::new(RandomEngine::default()),
-            1 => Box::new(MiniMaxEngine::new(3)),
-            2 => Box::new(MiniMaxEngine::new(4)),
-            3 => Box::new(MiniMaxEngine::new(5)),
-            4 => Box::new(AlphaBetaEngine::new(3)),
-            5 => Box::new(AlphaBetaEngine::new(4)),
-            6 => Box::new(AlphaBetaEngine::new(5)),
-            _ => {
-                // 索引越界时使用 Random
-                eprintln!(
-                    "Unknown engine index {}, falling back to Random",
-                    self.selected_engine_index
-                );
-                Box::new(RandomEngine::default())
-            }
-        }
+        self.selected_engine_kind.create()
     }
 
     fn handle_engine(&mut self, ctx: &egui::Context) {

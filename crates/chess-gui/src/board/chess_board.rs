@@ -9,7 +9,7 @@ use egui::{PointerButton, Pos2, Sense, Vec2};
 use crate::board::layout::BoardLayout;
 use crate::board::renderer::BoardRenderer;
 use crate::board::state::{BoardArrow, BoardState};
-use crate::game::controller::{GameController, GameMode, SelectionResult};
+use crate::game::{GameController, GameMode, SelectionResult};
 use crate::piece::texture::PieceTextureManager;
 use crate::theme::ThemeColors;
 

@@ -8,10 +8,6 @@ use crate::ChessEngine;
 pub struct RandomEngine;
 
 impl ChessEngine for RandomEngine {
-    fn name(&self) -> &str {
-        "Random Engine"
-    }
-
     fn search(&mut self, position: &Position) -> Option<Move> {
         let moves = generate_legal2(position);
         moves.choose(&mut rand::rng()).copied()
@@ -21,12 +17,6 @@ impl ChessEngine for RandomEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn random_engine_name() {
-        let engine = RandomEngine::default();
-        assert_eq!(engine.name(), "Random Engine");
-    }
 
     #[test]
     fn random_engine_checkmate_returns_none() {
