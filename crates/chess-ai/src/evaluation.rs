@@ -1,40 +1,56 @@
 use chess_core::{Color, PieceKind, Position, generate_legal};
 
+/// 子力价值
+#[inline]
+fn piece_value(kind: PieceKind) -> i32 {
+    match kind {
+        PieceKind::Pawn => 100,
+        PieceKind::Knight => 320,
+        PieceKind::Bishop => 330,
+        PieceKind::Rook => 500,
+        PieceKind::Queen => 900,
+        PieceKind::King => 20000,
+    }
+}
+
 /// 子力评估
 /// 约定：正数代表白方优势，负数代表黑方优势
 pub fn evaluate(position: &Position) -> i32 {
     let mut score = 0;
+
     for (_, piece) in position.board() {
-        let value = match piece.kind {
-            PieceKind::Pawn => 100,
-            PieceKind::Knight => 320,
-            PieceKind::Bishop => 330,
-            PieceKind::Rook => 500,
-            PieceKind::Queen => 900,
-            PieceKind::King => 20000,
-        };
+        let value = piece_value(piece.kind);
+
         if piece.color == Color::White {
             score += value;
         } else {
             score -= value;
         }
     }
+
     score
 }
 
-pub fn terminal_score(position: &mut Position, ply: i32) -> Option<i32> {
-    let moves = generate_legal(position);
-    if !moves.is_empty() {
-        return None;
-    }
-
+/// 已知无合法走法时，计算将杀/逼和分数
+/// 调用者必须确保 position 无合法走法
+pub(crate) fn terminal_score_from_empty(position: &Position, ply: i32) -> i32 {
     if position.is_check() {
         match position.side_to_move() {
-            Color::White => Some(-100000 + ply),
-            Color::Black => Some(100000 - ply),
+            Color::White => -100000 + ply,
+            Color::Black => 100000 - ply,
         }
     } else {
-        Some(0)
+        0
+    }
+}
+
+/// 终局检测，生成合法走法，若为空则计算终局分数，否则返回 None
+pub fn terminal_score(position: &mut Position, ply: i32) -> Option<i32> {
+    let moves = generate_legal(position);
+    if moves.is_empty() {
+        Some(terminal_score_from_empty(position, ply))
+    } else {
+        None
     }
 }
 

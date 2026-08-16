@@ -4,7 +4,7 @@ use chess_core::{Color, Move, Position, generate_legal, make_move, unmake_move};
 
 use crate::{
     ChessEngine,
-    evaluation::{evaluate, terminal_score},
+    evaluation::{evaluate, terminal_score, terminal_score_from_empty},
 };
 
 pub struct MiniMaxEngine {
@@ -23,18 +23,20 @@ impl MiniMaxEngine {
     }
 
     fn minimax(position: &mut Position, depth: i32, ply: i32) -> i32 {
-        if let Some(score) = terminal_score(position, ply) {
-            return score;
-        }
-
         if depth == 0 {
+            if let Some(score) = terminal_score(position, ply) {
+                return score;
+            }
             return evaluate(position);
         }
 
-        // 利用已有的 &mut position，直接用 generate_legal（内部 make/unmake 会恢复）
+        let side = position.side_to_move();
         let moves = generate_legal(position);
+        if moves.is_empty() {
+            return terminal_score_from_empty(position, ply);
+        }
 
-        match position.side_to_move() {
+        match side {
             Color::White => {
                 let mut best = i32::MIN;
                 for mv in moves {
