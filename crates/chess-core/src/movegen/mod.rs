@@ -37,10 +37,8 @@ pub fn generate_legal(position: &mut Position) -> ArrayVec<Move, 256> {
         .collect()
 }
 
-/// 生成所有合法走法（`&Position` 便捷版本，内部 clone 一次）
-///
-/// 适合只有共享引用（`&Position`）的场景，调用方无需手动 clone。
-pub fn legal_moves_of(position: &Position) -> ArrayVec<Move, 256> {
+/// 行为等价于generate_legal，只是入参为不可变借用，会clone Position一次
+pub fn generate_legal2(position: &Position) -> ArrayVec<Move, 256> {
     let mut pos = position.clone();
     generate_legal(&mut pos)
 }

@@ -132,21 +132,10 @@ impl GameController {
         self.game.position()
     }
 
-    /// 获取当前局面的所有合法走法
-    #[allow(dead_code)]
-    pub fn legal_moves(&self) -> ArrayVec<Move, 256> {
-        self.game.legal_moves()
-    }
-
     /// 获取当前选中棋子可以走到的合法目标走法
     pub fn legal_moves_for_selected(&self) -> ArrayVec<Move, 256> {
         match self.selected_square {
-            Some(sq) => self
-                .game
-                .legal_moves()
-                .into_iter()
-                .filter(|m| m.from() == sq)
-                .collect(),
+            Some(sq) => self.game.legal_moves_from(sq),
             None => ArrayVec::new(),
         }
     }

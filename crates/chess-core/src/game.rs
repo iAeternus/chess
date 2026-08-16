@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 
 use crate::{
-    ChessError, Move, Position, Result,
+    ChessError, Move, Position, Result, Square,
     makemove::{Undo, make_move, unmake_move},
     movegen,
 };
@@ -45,7 +45,15 @@ impl Game {
 
     /// 获取当前所有合法走法
     pub fn legal_moves(&self) -> ArrayVec<Move, 256> {
-        movegen::legal_moves_of(&self.position)
+        movegen::generate_legal2(&self.position)
+    }
+
+    /// 获取从当前sq出发的所有合法走法
+    pub fn legal_moves_from(&self, sq: Square) -> ArrayVec<Move, 256> {
+        self.legal_moves()
+            .into_iter()
+            .filter(|m| m.from() == sq)
+            .collect()
     }
 
     /// 执行走法

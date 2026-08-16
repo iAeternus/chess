@@ -60,7 +60,7 @@ pub use error::{ChessError, Result};
 pub use game::Game;
 pub use legality::is_legal;
 pub use makemove::{Undo, make_move, unmake_move};
-pub use movegen::{generate_legal, generate_pseudo_legal, legal_moves_of};
+pub use movegen::{generate_legal, generate_pseudo_legal, generate_legal2};
 pub use mv::{Move, MoveFlag, Promotion};
 pub use perft::{divide, perft};
 pub use piece::{Piece, PieceKind};

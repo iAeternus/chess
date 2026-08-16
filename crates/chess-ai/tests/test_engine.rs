@@ -14,7 +14,7 @@
 //! - 残局（KQ vs K、通路兵赛跑）
 
 use chess_ai::{ChessEngine, MiniMaxEngine, RandomEngine};
-use chess_core::{Move, MoveFlag, Position, Square, legal_moves_of};
+use chess_core::{Move, MoveFlag, Position, Square, generate_legal2};
 
 /// 选择 MiniMax 引擎
 fn choose_engine(depth: i32) -> Box<dyn ChessEngine> {
@@ -29,7 +29,7 @@ fn search(position: &Position, depth: i32) -> Option<Move> {
 
 /// 验证走法合法
 fn assert_legal_move(position: &Position, mv: Move, msg: &str) {
-    let legal = legal_moves_of(position);
+    let legal = generate_legal2(position);
     assert!(
         legal.iter().any(|&m| m == mv),
         "{msg}: move {mv:?} is not in legal move list:\n{legal:?}",
