@@ -1,7 +1,7 @@
 pub(crate) mod arrows;
-pub(crate) mod background;
+pub(crate) mod bg;
 pub mod chess_board;
-pub(crate) mod coordinates;
+pub(crate) mod coords;
 pub(crate) mod highlight;
 pub mod layout;
 pub(crate) mod pieces;

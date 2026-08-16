@@ -383,7 +383,7 @@ impl ChessApp {
             );
 
             let colors = self.theme.colors();
-            
+
             for event in response.events {
                 match event {
                     BoardEvent::MoveMade(_) => {}

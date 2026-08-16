@@ -4,8 +4,8 @@
 //! 仅负责按正确顺序调用各子渲染器
 
 use crate::board::arrows::ArrowRenderer;
-use crate::board::background::BoardBackgroundRenderer;
-use crate::board::coordinates::CoordinateRenderer;
+use crate::board::bg::BoardBgRenderer;
+use crate::board::coords::CoordRenderer;
 use crate::board::highlight::HighlightRenderer;
 use crate::board::layout::BoardLayout;
 use crate::board::pieces::PieceRenderer;
@@ -46,7 +46,7 @@ impl BoardRenderer {
         textures: &PieceTextureManager,
         flipped: bool,
     ) {
-        BoardBackgroundRenderer::paint(painter, layout, &self.colors);
+        BoardBgRenderer::paint(painter, layout, &self.colors);
         HighlightRenderer::paint(painter, layout, state, &self.colors, flipped);
         PieceRenderer::paint(painter, layout, state, textures, flipped, &self.colors);
         if !state.arrows.is_empty() {
@@ -58,6 +58,6 @@ impl BoardRenderer {
                 flipped,
             );
         }
-        CoordinateRenderer::paint(painter, layout, &self.colors, flipped);
+        CoordRenderer::paint(painter, layout, &self.colors, flipped);
     }
 }

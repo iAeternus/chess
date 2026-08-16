@@ -197,7 +197,9 @@ fn depth_zero_returns_legal_move() {
     // 因此该测试验证 depth=1（最低有效搜索深度）正常工作。
     let position = Position::startpos();
     let mut engine = MiniMaxEngine::new(1);
-    let mv = engine.search(&position).expect("depth 1 should return a move");
+    let mv = engine
+        .search(&position)
+        .expect("depth 1 should return a move");
     assert_legal_move(&position, mv, "depth 1: move not legal");
 }
 
@@ -273,15 +275,8 @@ fn promotion_found() {
     let position = Position::from_fen("8/4P3/8/8/4k3/8/8/4K3 w - - 0 1").unwrap();
     let mv = search(&position, 1).expect("should find a move");
     assert_legal_move(&position, mv, "promotion move not legal");
-    assert!(
-        mv.is_promotion(),
-        "expected a promotion move, got {mv:?}"
-    );
-    assert_eq!(
-        mv.to(),
-        Square::E8,
-        "expected promotion on e8, got {mv:?}"
-    );
+    assert!(mv.is_promotion(), "expected a promotion move, got {mv:?}");
+    assert_eq!(mv.to(), Square::E8, "expected promotion on e8, got {mv:?}");
 }
 
 #[test]

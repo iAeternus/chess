@@ -9,9 +9,9 @@ use crate::theme::ThemeColors;
 /// 圆角半径占格子的比例
 const ROUNDING_RATIO: f32 = 0.06;
 
-pub struct BoardBackgroundRenderer;
+pub struct BoardBgRenderer;
 
-impl BoardBackgroundRenderer {
+impl BoardBgRenderer {
     /// 绘制棋盘背景：外围背景色、64 格交替色、内框圆角描边。
     pub fn paint(painter: &egui::Painter, layout: &BoardLayout, colors: &ThemeColors) {
         // 外围背景填充

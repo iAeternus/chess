@@ -87,7 +87,11 @@ impl MoveListPanel {
                             ui.with_layout(
                                 egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
                                 |ui| {
-                                    ui.label(egui::RichText::new("#").color(colors.move_list_dim_text).strong());
+                                    ui.label(
+                                        egui::RichText::new("#")
+                                            .color(colors.move_list_dim_text)
+                                            .strong(),
+                                    );
                                 },
                             );
                         });
@@ -159,7 +163,8 @@ impl MoveListPanel {
                                             .unwrap_or("??");
                                         let display = san_with_icon(san, Color::Black);
 
-                                        if self.move_cell(ui, &display, current_ply == ply, colors) {
+                                        if self.move_cell(ui, &display, current_ply == ply, colors)
+                                        {
                                             on_action(MoveListAction::JumpToPly(ply));
                                         }
                                     }

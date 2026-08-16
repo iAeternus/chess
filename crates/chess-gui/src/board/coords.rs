@@ -5,9 +5,9 @@ use egui::{Align2, FontId, Pos2};
 use crate::board::layout::BoardLayout;
 use crate::theme::ThemeColors;
 
-pub struct CoordinateRenderer;
+pub struct CoordRenderer;
 
-impl CoordinateRenderer {
+impl CoordRenderer {
     /// 绘制行号（1-8）和列号（a-h）。
     ///
     /// 行号位于左侧边距垂直居中，列号位于底部边距水平居中。

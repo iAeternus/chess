@@ -130,11 +130,11 @@ mod tests {
     fn test_terminal_score_mate_ply_bonus() {
         // 验证 ply 加成：浅层将杀分数更接近 0，体现"更快将杀/更慢被将杀"偏好
         // 白方被将杀，ply=1 分数 < ply=5（更负 = 输得更快 = 应避免）
-        let mut pos1 =
-            Position::from_fen("6k1/5ppp/8/8/8/8/5PPP/4r1K1 w - - 0 1").unwrap();
+        let mut pos1 = Position::from_fen("6k1/5ppp/8/8/8/8/5PPP/4r1K1 w - - 0 1").unwrap();
         let score_ply1 = terminal_score(&mut pos1, 1).unwrap();
         let score_ply5 = terminal_score(&mut pos1, 5).unwrap();
-        assert!(score_ply1 < score_ply5,
+        assert!(
+            score_ply1 < score_ply5,
             "mate at ply=1 ({score_ply1}) should be worse (more negative) than ply=5 ({score_ply5})"
         );
     }
