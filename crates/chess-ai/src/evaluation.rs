@@ -31,7 +31,6 @@ pub fn terminal_score(position: &mut Position, ply: i32) -> Option<i32> {
     if position.is_check() {
         match position.side_to_move() {
             Color::White => Some(-100000 + ply),
-
             Color::Black => Some(100000 - ply),
         }
     } else {

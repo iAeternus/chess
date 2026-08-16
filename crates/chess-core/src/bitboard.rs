@@ -63,10 +63,6 @@ impl BitBoard {
         self.0 &= self.0 - 1;
         Some(sq)
     }
-
-    pub fn as_u64(&self) -> u64 {
-        self.0
-    }
 }
 
 impl BitOr for BitBoard {
@@ -110,6 +106,12 @@ impl BitXor for BitBoard {
 
     fn bitxor(self, rhs: Self) -> Self::Output {
         Self(self.0 ^ rhs.0)
+    }
+}
+
+impl From<BitBoard> for u64 {
+    fn from(value: BitBoard) -> Self {
+        value.0
     }
 }
 
