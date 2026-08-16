@@ -4,6 +4,7 @@
         "bitboard",
         "bitflags",
         "fullmove",
+        "gameover",
         "halfmove",
         "Lichess",
         "makemove",

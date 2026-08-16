@@ -2,7 +2,7 @@
 //!
 //! 负责协调各个子系统：GameController、BoardRenderer、面板、纹理、交互。
 
-use chess_ai::{ChessEngine, MiniMaxEngine, RandomEngine};
+use chess_ai::{AlphaBetaEngine, ChessEngine, MiniMaxEngine, RandomEngine};
 use chess_core::{Color, Piece, Square};
 use egui::{Align2, Pos2};
 
@@ -284,6 +284,9 @@ impl ChessApp {
                             "Minimax (depth 3)",
                             "Minimax (depth 4)",
                             "Minimax (depth 5)",
+                            "AlphaBeta (depth 3)",
+                            "AlphaBeta (depth 4)",
+                            "AlphaBeta (depth 5)",
                         ];
                         let mut changed = false;
                         egui::ComboBox::from_id_salt("engine_select")
@@ -504,7 +507,18 @@ impl ChessApp {
             0 => Box::new(RandomEngine::default()),
             1 => Box::new(MiniMaxEngine::new(3)),
             2 => Box::new(MiniMaxEngine::new(4)),
-            _ => Box::new(MiniMaxEngine::new(5)),
+            3 => Box::new(MiniMaxEngine::new(5)),
+            4 => Box::new(AlphaBetaEngine::new(3)),
+            5 => Box::new(AlphaBetaEngine::new(4)),
+            6 => Box::new(AlphaBetaEngine::new(5)),
+            _ => {
+                // 索引越界时使用 Random
+                eprintln!(
+                    "Unknown engine index {}, falling back to Random",
+                    self.selected_engine_index
+                );
+                Box::new(RandomEngine::default())
+            }
         }
     }
 

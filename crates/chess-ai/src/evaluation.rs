@@ -33,7 +33,7 @@ pub fn evaluate(position: &Position) -> i32 {
 
 /// 已知无合法走法时，计算将杀/逼和分数
 /// 调用者必须确保 position 无合法走法
-pub(crate) fn terminal_score_from_empty(position: &Position, ply: i32) -> i32 {
+pub(crate) fn score_if_gameover(position: &Position, ply: i32) -> i32 {
     if position.is_check() {
         match position.side_to_move() {
             Color::White => -100000 + ply,
@@ -48,7 +48,7 @@ pub(crate) fn terminal_score_from_empty(position: &Position, ply: i32) -> i32 {
 pub fn terminal_score(position: &mut Position, ply: i32) -> Option<i32> {
     let moves = generate_legal(position);
     if moves.is_empty() {
-        Some(terminal_score_from_empty(position, ply))
+        Some(score_if_gameover(position, ply))
     } else {
         None
     }

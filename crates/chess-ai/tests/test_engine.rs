@@ -13,13 +13,14 @@
 //! - 战术模式（两步杀、马叉、升变、避免逼和）
 //! - 残局（KQ vs K、通路兵赛跑）
 
-use chess_ai::{ChessEngine, MiniMaxEngine};
+use chess_ai::{AlphaBetaEngine, ChessEngine, MiniMaxEngine};
 use chess_core::{Move, MoveFlag, Position, Square, generate_legal2};
 
 /// 选择引擎，当前可选：
-/// - MiniMaxEngine
+/// - [MiniMaxEngine]
+/// - [AlphaBetaEngine]
 fn choose_engine(depth: i32) -> Box<dyn ChessEngine> {
-    Box::new(MiniMaxEngine::new(depth))
+    Box::new(AlphaBetaEngine::new(depth))
 }
 
 /// 在给定局面上运行引擎搜索，返回找到的走法

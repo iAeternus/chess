@@ -4,7 +4,7 @@ use chess_core::{Color, Move, Position, generate_legal, make_move, unmake_move};
 
 use crate::{
     ChessEngine,
-    evaluation::{evaluate, terminal_score, terminal_score_from_empty},
+    evaluation::{evaluate, terminal_score, score_if_gameover},
 };
 
 pub struct MiniMaxEngine {
@@ -33,7 +33,7 @@ impl MiniMaxEngine {
         let side = position.side_to_move();
         let moves = generate_legal(position);
         if moves.is_empty() {
-            return terminal_score_from_empty(position, ply);
+            return score_if_gameover(position, ply);
         }
 
         match side {
