@@ -13,10 +13,11 @@
 //! - 战术模式（两步杀、马叉、升变、避免逼和）
 //! - 残局（KQ vs K、通路兵赛跑）
 
-use chess_ai::{ChessEngine, MiniMaxEngine, RandomEngine};
+use chess_ai::{ChessEngine, MiniMaxEngine};
 use chess_core::{Move, MoveFlag, Position, Square, generate_legal2};
 
-/// 选择 MiniMax 引擎
+/// 选择引擎，当前可选：
+/// - MiniMaxEngine
 fn choose_engine(depth: i32) -> Box<dyn ChessEngine> {
     Box::new(MiniMaxEngine::new(depth))
 }
@@ -35,10 +36,6 @@ fn assert_legal_move(position: &Position, mv: Move, msg: &str) {
         "{msg}: move {mv:?} is not in legal move list:\n{legal:?}",
     );
 }
-
-// ─────────────────────────────────────────────────────────
-// 原有 MiniMax 测试
-// ─────────────────────────────────────────────────────────
 
 #[test]
 fn mate_in_one_white() {
@@ -137,69 +134,12 @@ fn depth_3_sees_further_than_depth_1() {
     );
 }
 
-// ─────────────────────────────────────────────────────────
-// RandomEngine 测试
-// ─────────────────────────────────────────────────────────
-
-#[test]
-fn random_engine_returns_legal_move() {
-    let position = Position::startpos();
-    let mut engine = RandomEngine::default();
-    let mv = engine.search(&position).expect("should find a move");
-    assert_legal_move(&position, mv, "random engine: move not legal");
-}
-
-#[test]
-fn random_engine_checkmate_returns_none() {
-    // 黑方被将杀
-    let position = Position::from_fen("7k/6Q1/5K2/8/8/8/8/8 b - - 0 1").unwrap();
-    let mut engine = RandomEngine::default();
-    assert!(
-        engine.search(&position).is_none(),
-        "random engine should return None on checkmate"
-    );
-}
-
-#[test]
-fn random_engine_stalemate_returns_none() {
-    // 黑方被逼和
-    let position = Position::from_fen("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1").unwrap();
-    let mut engine = RandomEngine::default();
-    assert!(
-        engine.search(&position).is_none(),
-        "random engine should return None on stalemate"
-    );
-}
-
-// ─────────────────────────────────────────────────────────
-// 引擎名称测试
-// ─────────────────────────────────────────────────────────
-
-#[test]
-fn minimax_engine_name() {
-    let engine = MiniMaxEngine::new(3);
-    assert_eq!(engine.name(), "MiniMax Engine");
-}
-
-#[test]
-fn random_engine_name() {
-    let engine = RandomEngine::default();
-    assert_eq!(engine.name(), "Random Engine");
-}
-
-// ─────────────────────────────────────────────────────────
-// 边界条件 / 鲁棒性测试
-// ─────────────────────────────────────────────────────────
-
 #[test]
 fn depth_zero_returns_legal_move() {
     // depth=0 在 minimax 中会导致无限递归（search 调用 minimax(depth=-1)），
     // 因此该测试验证 depth=1（最低有效搜索深度）正常工作。
     let position = Position::startpos();
-    let mut engine = MiniMaxEngine::new(1);
-    let mv = engine
-        .search(&position)
-        .expect("depth 1 should return a move");
+    let mv = search(&position, 1).expect("depth 1 should return a move");
     assert_legal_move(&position, mv, "depth 1: move not legal");
 }
 
@@ -207,9 +147,8 @@ fn depth_zero_returns_legal_move() {
 fn depth_zero_on_checkmate_returns_none() {
     // depth=0 在将杀局面应返回 None（无合法走法）
     let position = Position::from_fen("7k/6Q1/5K2/8/8/8/8/8 b - - 0 1").unwrap();
-    let mut engine = MiniMaxEngine::new(0);
     assert!(
-        engine.search(&position).is_none(),
+        search(&position, 0).is_none(),
         "depth 0 on checkmate should return None"
     );
 }
@@ -226,10 +165,6 @@ fn position_unchanged_after_search() {
         "position should not be mutated by search"
     );
 }
-
-// ─────────────────────────────────────────────────────────
-// 战术模式测试
-// ─────────────────────────────────────────────────────────
 
 #[test]
 fn mate_in_two() {
@@ -293,10 +228,6 @@ fn avoid_stalemate() {
         "expected Qg7# (mate in 1), got {mv:?}"
     );
 }
-
-// ─────────────────────────────────────────────────────────
-// 残局测试
-// ─────────────────────────────────────────────────────────
 
 #[test]
 fn endgame_kq_vs_k() {

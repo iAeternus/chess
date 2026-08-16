@@ -103,4 +103,13 @@ impl ChessEngine for MiniMaxEngine {
     }
 }
 
-// TODO: Test
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn minimax_engine_name() {
+        let engine = MiniMaxEngine::new(3);
+        assert_eq!(engine.name(), "MiniMax Engine");
+    }
+}
