@@ -4,6 +4,8 @@
 //! 内部用起始局面 + 走法列表 + 游标表示当前位置，导航时从起始局面重放
 //! san_cache 和 undos 与走法列表保持同步
 
+use std::{fmt::Display, str::FromStr};
+
 use arrayvec::ArrayVec;
 
 use crate::{
@@ -366,6 +368,20 @@ impl Game {
     /// 获取对局结果（来自 Result 头信息，默认为 "*"）
     pub fn result(&self) -> &str {
         self.header("Result").unwrap_or("*")
+    }
+}
+
+impl Display for Game {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.export_pgn())
+    }
+}
+
+impl FromStr for Game {
+    type Err = ChessError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Game::from_pgn(s)
     }
 }
 
