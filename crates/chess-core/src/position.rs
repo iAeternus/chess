@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// 局面
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Position {
     /// 棋盘状态
     board: Board,

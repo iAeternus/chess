@@ -1,17 +1,24 @@
 //! PGN 解析器
 //!
-//! 将 PGN 文本解析为 [`Game`]，包含头信息和对局走法
+//! 将 PGN 文本解析为 [`ParsedPgn`]，包含头信息和对局走法
 
 use super::san::parse_san;
-use crate::{ChessError, Game, Result};
+use crate::{ChessError, Move, Position, Result, make_move};
 
-/// 解析完整的 PGN 文本，返回包含所有走法的 Game
+#[derive(Debug, Clone)]
+pub struct ParsedPgn {
+    pub start_position: Position,
+    pub moves: Vec<Move>,
+    pub headers: Vec<(String, String)>,
+}
+
+/// 解析完整的 PGN 文本，返回包含所有走法的 ParsedPgn
 ///
 /// 解析过程：
 /// 1. 提取头信息 `[Key "Value"]`
 /// 2. 提取走法文本，跳过注释、变着、NAG
 /// 3. 逐着解析 SAN 并执行
-pub fn parse_pgn(pgn: &str) -> Result<Game> {
+pub fn parse_pgn(pgn: &str) -> Result<ParsedPgn> {
     let pgn = pgn.trim();
     if pgn.is_empty() {
         return Err(ChessError::ParseError("empty PGN".into()));
@@ -26,27 +33,61 @@ pub fn parse_pgn(pgn: &str) -> Result<Game> {
         return Err(ChessError::ParseError("PGN has no move text".into()));
     }
 
-    // 提取 SAN 走法（跳过编号、注释、变着、NAG）
+    // 提取 SAN 走法列表
     let sans = extract_san_moves(move_text)?;
-
     if sans.is_empty() {
         return Err(ChessError::ParseError("PGN has no moves".into()));
     }
 
-    // 创建 Game 并逐着重现
-    let mut game = Game::new();
-    for (key, value) in headers {
-        game.set_header(&key, &value);
-    }
+    // 确定起始局面
+    let start_position = determine_start_position(&headers)?;
+
+    // 逐着解析 SAN，但不执行，仅生成 Move 列表
+    let mut moves = Vec::with_capacity(sans.len());
+    // 使用一个临时的 Position 来解析 SAN（SAN 解析需要当前局面）
+    let mut current_pos = start_position.clone();
 
     for san in &sans {
-        let pos = game.position().clone();
-        let mv = parse_san(&pos, san)?;
-        game.play(mv)
-            .map_err(|e| ChessError::ParseError(format!("illegal move '{san}' in PGN: {e}")))?;
+        let mv = parse_san(&current_pos, san)
+            .map_err(|e| ChessError::ParseError(format!("illegal SAN '{}': {}", san, e)))?;
+        // 注意：这里需要用底层 make_move 更新 current_pos，不检查合法性（因为 parse_san 已保证合法）
+        make_move(&mut current_pos, mv);
+        moves.push(mv);
     }
 
-    Ok(game)
+    Ok(ParsedPgn {
+        start_position,
+        moves,
+        headers,
+    })
+}
+
+/// 从 PGN 头信息中提取起始局面
+fn determine_start_position(headers: &[(String, String)]) -> Result<Position> {
+    // 查找 FEN 头信息
+    let fen = headers
+        .iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case("FEN"))
+        .map(|(_, v)| v.as_str());
+
+    if let Some(fen) = fen {
+        // 如果有 FEN，必须同时有 SetUp "1"
+        let setup = headers
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case("SetUp"))
+            .map(|(_, v)| v.as_str());
+
+        if setup != Some("1") {
+            // 根据 PGN 规范，有 FEN 就应有 SetUp "1"，但有些宽松实现可忽略此检查
+            // 这里选择宽松处理：只要有 FEN 就使用它
+        }
+
+        Position::from_fen(fen)
+            .map_err(|e| ChessError::ParseError(format!("invalid FEN in PGN: {}", e)))
+    } else {
+        // 没有 FEN，使用标准起始局面
+        Ok(Position::startpos())
+    }
 }
 
 /// 解析 PGN 头信息
@@ -330,15 +371,24 @@ mod tests {
     }
 
     #[test]
-    fn test_full_minimal_pgn() {
+    fn test_parse_pgn_returns_headers_and_moves() {
         let pgn = r#"[Event "Test"]
         [Result "1-0"]
 
         1. e4 e5 1-0"#;
-        let game = parse_pgn(pgn).unwrap();
-        assert_eq!(game.header("Event").unwrap(), "Test");
-        assert_eq!(game.result(), "1-0");
-        assert_eq!(game.history().len(), 2);
+
+        let parsed = parse_pgn(pgn).unwrap();
+
+        assert_eq!(
+            parsed
+                .headers
+                .iter()
+                .find(|(k, _)| k == "Event")
+                .map(|(_, v)| v.as_str()),
+            Some("Test")
+        );
+        assert_eq!(parsed.moves.len(), 2);
+        assert_eq!(parsed.start_position, Position::startpos());
     }
 
     #[test]

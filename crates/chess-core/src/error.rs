@@ -28,6 +28,10 @@ pub enum ChessError {
     #[error("nothing to undo")]
     NothingToUndo,
 
+    /// 没有可重做的走法
+    #[error("nothing to redo")]
+    NothingToRedo,
+
     /// 非法升变
     #[error("invalid promotion")]
     InvalidPromotion,

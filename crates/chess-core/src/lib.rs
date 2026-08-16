@@ -30,7 +30,7 @@
 //!   [`generate_legal`]、[`make_move`]/[`unmake_move`]，避免 [`Game`] 的开销
 //! - **编写 GUI / 对局管理** -> 使用 Orchestration 层：通过 [`Game`] 管理走法历史、
 //!   导入/导出 PGN、查询对局状态
-//! - **编写 PGN 工具** -> 启用 `all` feature，使用 [`from_pgn`]、[`to_pgn`]、[`parse_san`]、
+//! - **编写 PGN 工具** -> 启用 `all` feature，使用 [`parse_pgn`]、[`write_pgn`]、[`parse_san`]、
 //!   [`move_to_san`]
 
 mod attack;
@@ -60,7 +60,7 @@ pub use error::{ChessError, Result};
 pub use game::Game;
 pub use legality::is_legal;
 pub use makemove::{Undo, make_move, unmake_move};
-pub use movegen::{generate_legal, generate_pseudo_legal, generate_legal2};
+pub use movegen::{generate_legal, generate_legal2, generate_pseudo_legal};
 pub use mv::{Move, MoveFlag, Promotion};
 pub use perft::{divide, perft};
 pub use piece::{Piece, PieceKind};
@@ -70,6 +70,6 @@ pub use square::Square;
 #[cfg(feature = "all")]
 pub use fen::{fen2position, position2fen};
 #[cfg(feature = "all")]
-pub use pgn::{from_pgn, move_to_san, parse_san, to_pgn};
+pub use pgn::{move_to_san, parse_pgn, parse_san, write_pgn};
 #[cfg(feature = "all")]
 pub use zobrist::Zobrist;

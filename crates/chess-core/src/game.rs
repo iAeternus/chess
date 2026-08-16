@@ -1,14 +1,37 @@
+//! 对局模型：管理局面、走法历史、导航和 PGN
+//!
+//! Game 是唯一权威数据源
+//! 内部用起始局面 + 走法列表 + 游标表示当前位置，导航时从起始局面重放
+//! san_cache 和 undos 与走法列表保持同步
+
 use arrayvec::ArrayVec;
 
 use crate::{
-    ChessError, Move, Position, Result, Square,
-    makemove::{Undo, make_move, unmake_move},
+    ChessError, Color, Move, Position, Result, Square,
+    makemove::{Undo, make_move},
     movegen,
+    pgn::{move_to_san, parse_pgn, write_pgn},
 };
 
 pub struct Game {
+    /// 起始局面，导航和 reset 都回到这里
+    start_position: Position,
+
+    /// 当前局面：始终等于 start_position 重放 moves[..cursor] 后的局面
     position: Position,
-    history: Vec<(Move, Undo)>,
+
+    /// 已执行的半移动
+    moves: Vec<Move>,
+
+    /// 与 moves 一一对应的撤销信息，只用于内部 undo
+    undos: Vec<Undo>,
+
+    /// 当前位置：0 表示初始局面，len 表示最新局面
+    cursor: usize,
+
+    /// SAN 缓存，与 moves 一一对应
+    san_cache: Vec<String>,
+
     /// PGN 头信息，保持插入顺序
     headers: Vec<(String, String)>,
 }
@@ -22,23 +45,168 @@ impl Default for Game {
 impl Game {
     /// 从标准起始局面创建
     pub fn new() -> Self {
+        let start = Position::startpos();
         Self {
-            position: Position::startpos(),
-            history: Vec::new(),
+            start_position: start.clone(),
+            position: start,
+            moves: Vec::new(),
+            undos: Vec::new(),
+            cursor: 0,
+            san_cache: Vec::new(),
             headers: Vec::new(),
         }
     }
 
     /// 从 FEN 创建
     pub fn from_fen(fen: &str) -> Result<Self> {
+        let start = Position::from_fen(fen)?;
         Ok(Self {
-            position: Position::from_fen(fen)?,
-            history: Vec::new(),
+            start_position: start.clone(),
+            position: start,
+            moves: Vec::new(),
+            undos: Vec::new(),
+            cursor: 0,
+            san_cache: Vec::new(),
             headers: Vec::new(),
         })
     }
 
-    /// 获取当前局面（只读引用）
+    /// 从 PGN 创建
+    pub fn from_pgn(pgn: &str) -> Result<Self> {
+        let parsed = parse_pgn(pgn)?;
+
+        let mut game = Self {
+            start_position: parsed.start_position.clone(),
+            position: parsed.start_position,
+            moves: Vec::new(),
+            undos: Vec::new(),
+            cursor: 0,
+            san_cache: Vec::new(),
+            headers: parsed.headers,
+        };
+
+        // 逐着执行，填充 undos 和 san_cache
+        for mv in parsed.moves {
+            game.play(mv)?; // 此时会生成 SAN 并更新 position 等
+        }
+
+        // 加载完成后通常定位到起始局面
+        game.go_to_start();
+
+        Ok(game)
+    }
+
+    /// 执行走法
+    pub fn play(&mut self, mv: Move) -> Result<()> {
+        if !self.legal_moves().contains(&mv) {
+            return Err(ChessError::InvalidMove(mv));
+        }
+
+        // 如果不在最新位置，截断未来分支
+        if self.cursor < self.moves.len() {
+            self.moves.truncate(self.cursor);
+            self.undos.truncate(self.cursor);
+            self.san_cache.truncate(self.cursor);
+        }
+
+        // 生成 SAN，需要走棋前的局面
+        let san =
+            move_to_san(&self.position, mv).unwrap_or_else(|_| format!("{}{}", mv.from(), mv.to()));
+
+        // 执行走法，并保存 undo
+        let undo = make_move(&mut self.position, mv);
+
+        self.moves.push(mv);
+        self.undos.push(undo);
+        self.san_cache.push(san);
+        self.cursor += 1;
+
+        Ok(())
+    }
+
+    pub fn can_go_back(&self) -> bool {
+        self.cursor > 0
+    }
+
+    pub fn can_go_forward(&self) -> bool {
+        self.cursor < self.moves.len()
+    }
+
+    pub fn go_to_start(&mut self) {
+        self.go_to_ply(0);
+    }
+
+    pub fn go_to_end(&mut self) {
+        let end = self.moves.len();
+        self.go_to_ply(end);
+    }
+
+    pub fn go_back(&mut self) {
+        if self.cursor > 0 {
+            self.go_to_ply(self.cursor - 1);
+        }
+    }
+
+    pub fn go_forward(&mut self) {
+        if self.cursor < self.moves.len() {
+            self.go_to_ply(self.cursor + 1);
+        }
+    }
+
+    pub fn go_to_ply(&mut self, ply: usize) {
+        let target = ply.min(self.moves.len());
+
+        if target == self.cursor {
+            return;
+        }
+
+        // 从起始局面重放到目标 ply，O(N)但由于步数不多可接受
+        self.position = self.start_position.clone();
+        for mv in &self.moves[..target] {
+            make_move(&mut self.position, *mv);
+        }
+
+        self.cursor = target;
+    }
+
+    pub fn current_ply(&self) -> usize {
+        self.cursor
+    }
+
+    pub fn total_moves(&self) -> usize {
+        self.moves.len()
+    }
+
+    pub fn is_at_latest(&self) -> bool {
+        self.cursor == self.moves.len()
+    }
+
+    /// 后退一个半移动
+    pub fn undo(&mut self) -> Result<()> {
+        if self.cursor == 0 {
+            return Err(ChessError::NothingToUndo);
+        }
+
+        self.go_back();
+        Ok(())
+    }
+
+    /// 前进一个半移动
+    pub fn redo(&mut self) -> Result<()> {
+        if self.cursor >= self.moves.len() {
+            return Err(ChessError::NothingToRedo);
+        }
+
+        self.go_forward();
+        Ok(())
+    }
+
+    /// 获取起始局面
+    pub fn start_position(&self) -> &Position {
+        &self.start_position
+    }
+
+    /// 获取当前局面
     pub fn position(&self) -> &Position {
         &self.position
     }
@@ -48,7 +216,7 @@ impl Game {
         movegen::generate_legal2(&self.position)
     }
 
-    /// 获取从当前sq出发的所有合法走法
+    /// 获取从当前 sq 出发的所有合法走法
     pub fn legal_moves_from(&self, sq: Square) -> ArrayVec<Move, 256> {
         self.legal_moves()
             .into_iter()
@@ -56,51 +224,115 @@ impl Game {
             .collect()
     }
 
-    /// 执行走法
-    pub fn play(&mut self, mv: Move) -> Result<()> {
-        if !self.legal_moves().contains(&mv) {
-            return Err(ChessError::InvalidMove(mv));
-        }
-
-        let undo = make_move(&mut self.position, mv);
-        self.history.push((mv, undo));
-
-        Ok(())
+    /// 获取上一步走法
+    pub fn last_move(&self) -> Option<Move> {
+        self.cursor
+            .checked_sub(1)
+            .and_then(|i| self.moves.get(i))
+            .copied()
     }
 
-    /// 撤销上一步走法
-    pub fn undo(&mut self) -> Result<()> {
-        let (_, undo) = self.history.pop().ok_or(ChessError::NothingToUndo)?;
-
-        unmake_move(&mut self.position, undo);
-
-        Ok(())
+    /// 获取走法历史
+    pub fn move_history(&self) -> &[Move] {
+        &self.moves
     }
 
-    /// 检测游戏是否结束
-    pub fn is_game_over(&self) -> bool {
-        self.is_checkmate() || self.is_stalemate()
+    /// 获取 SAN 缓存
+    pub fn san_list(&self) -> &[String] {
+        &self.san_cache
     }
 
-    /// 检测是否将杀
+    /// 是否将军
+    pub fn is_check(&self) -> bool {
+        self.position.is_check()
+    }
+
+    /// 是否将死
     pub fn is_checkmate(&self) -> bool {
         self.position.is_check() && self.legal_moves().is_empty()
     }
 
-    /// 检测是否逼和
+    /// 是否逼和
     pub fn is_stalemate(&self) -> bool {
         !self.position.is_check() && self.legal_moves().is_empty()
     }
 
-    /// 走法历史
-    pub fn history(&self) -> &[(Move, Undo)] {
-        &self.history
+    /// 是否游戏结束
+    pub fn is_game_over(&self) -> bool {
+        self.is_checkmate() || self.is_stalemate()
     }
 
-    /// 重置
-    pub fn reset(&mut self) {
-        self.position = Position::startpos();
-        self.history.clear();
+    /// 获取走棋方
+    pub fn side_to_move(&self) -> Color {
+        self.position.side_to_move()
+    }
+
+    /// 获取第 ply 着局面
+    pub fn position_at_ply(&self, ply: usize) -> Option<Position> {
+        if ply > self.moves.len() {
+            return None;
+        }
+
+        let mut pos = self.start_position.clone();
+        for mv in &self.moves[..ply] {
+            make_move(&mut pos, *mv);
+        }
+
+        Some(pos)
+    }
+
+    /// 导出为 PGN
+    pub fn export_pgn(&self) -> String {
+        // 构造一个临时 Game，游标在末尾
+        let mut tmp = Self {
+            start_position: self.start_position.clone(),
+            position: self.start_position.clone(),
+            moves: self.moves.clone(),
+            undos: Vec::new(), // 不需要
+            cursor: self.moves.len(),
+            san_cache: self.san_cache.clone(),
+            headers: self.headers.clone(),
+        };
+
+        // 重放到末尾
+        for mv in &tmp.moves {
+            make_move(&mut tmp.position, *mv);
+        }
+
+        write_pgn(&tmp)
+    }
+
+    /// 分析模式专用：尝试执行任意一方棋子的合法走法 TODO: 需要进一步检查
+    pub fn play_any(&mut self, mv: Move) -> Result<()> {
+        let side_to_move = self.position.side_to_move();
+
+        // 如果本来轮到该方，直接走
+        if self.position.piece_at(mv.from()).map(|p| p.color) == Some(side_to_move) {
+            return self.play(mv);
+        }
+
+        // 否则需要临时切换行棋方来验证走法
+        let moving_side = match self.position.piece_at(mv.from()) {
+            Some(p) => p.color,
+            None => return Err(ChessError::InvalidMove(mv)),
+        };
+
+        let saved_side = side_to_move;
+
+        // 需要 Position 提供 setter，或通过 make_move/unmake_move 模拟
+        self.position.set_side_to_move(moving_side);
+
+        let legal = self.legal_moves();
+        let valid = legal.contains(&mv);
+
+        self.position.set_side_to_move(saved_side);
+
+        if !valid {
+            return Err(ChessError::InvalidMove(mv));
+        }
+
+        // 检查通过后执行
+        self.play(mv)
     }
 
     /// 获取所有 PGN 头信息（保持插入顺序）
@@ -206,12 +438,11 @@ mod tests {
         ];
 
         for promotion in promotions {
-            let mut game = Game::from_fen("8/4P3/8/8/8/8/8/4K3 w - - 0 1").unwrap();
+            let mut game = Game::from_fen("3k4/4P3/8/8/8/8/8/4K3 w - - 0 1").unwrap();
 
             // 白王 e1
             // 白兵 e7，即将进入第8排升变
-            // 黑方无子阻挡
-            // 可以升变为后、车、象、马四种棋子
+            // 黑王 d8，不在升变格 e8 上
             let mv = Move::new_promotion(Square::E7, Square::E8, promotion, false);
             assert!(
                 game.legal_moves().contains(&mv),

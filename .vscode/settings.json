@@ -11,6 +11,7 @@
         "queenside",
         "RNBQKBNR",
         "startpos",
+        "undos",
         "unmultiplied",
         "Zobrist"
     ]

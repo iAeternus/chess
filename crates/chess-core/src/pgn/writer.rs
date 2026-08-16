@@ -1,7 +1,7 @@
 //! PGN 输出：将 [`Game`] 序列化为 PGN 文本
 
 use super::san::move_to_san;
-use crate::{Game, Position, makemove::make_move};
+use crate::{Game, makemove::make_move};
 
 /// 将对局写为完整的 PGN 文本
 ///
@@ -28,19 +28,15 @@ pub fn write_pgn(game: &Game) -> String {
 
 /// 生成走法文本（不含换行）
 fn format_move_text(game: &Game) -> String {
-    let history = game.history();
+    let history = game.move_history();
     if history.is_empty() {
         return String::from("*");
     }
 
     let mut result = String::new();
-    let mut position = Position::startpos();
+    let mut position = game.start_position().clone();
 
-    // 需要从头回放走法以获取每个走法前的局面
-    // 但 history 中的 Moves 是已经执行过的，我们需要"撤销"或"重建"
-    // 简单方案：从头开始，对每个走法调用 move_to_san，然后执行
-
-    for (i, (mv, _undo)) in history.iter().enumerate() {
+    for (i, mv) in history.iter().enumerate() {
         // 白方走法前加编号
         if i % 2 == 0 {
             let move_number = i / 2 + 1;
