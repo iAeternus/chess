@@ -31,7 +31,7 @@ impl CoordRenderer {
 
         for i in 0..8u8 {
             // 行号（1-8）：左侧外边距垂直居中
-            let row_sq = Square::from_coord(0, i).unwrap().view(view_from);
+            let row_sq = Square::from_coord(0, 7 - i).unwrap().view(view_from);
             let rx = layout.coord_margin / 2.0;
             let ry = board.min.y + i as f32 * layout.square_size + layout.square_size / 2.0;
             painter.text(
