@@ -25,7 +25,7 @@ impl BoardBgRenderer {
         for rank in 0..8u8 {
             for file in 0..8u8 {
                 let sq = Square::from_coord(file, rank).unwrap(); // SAFETY: fille and rand is valid here
-                let r = layout.square_rect(sq, false); // 格子模式不随翻转变化
+                let r = layout.square_rect(sq); // 格子模式不随翻转变化（180° 旋转下奇偶不变）
                 let bg = if (file + rank) % 2 == 0 {
                     colors.board_light
                 } else {

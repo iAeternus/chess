@@ -83,12 +83,10 @@ impl BoardLayout {
     }
 
     /// 单个格子在 painter-local 坐标系下的矩形
-    pub fn square_rect(&self, sq: Square, flipped: bool) -> Rect {
-        let (f, r) = if flipped {
-            (7 - sq.file(), 7 - sq.rank())
-        } else {
-            (sq.file(), sq.rank())
-        };
+    ///
+    /// 参数为**视角格**（棋盘格需先经 `Game::square_to_view` 转换）
+    pub fn square_rect(&self, view_sq: Square) -> Rect {
+        let (f, r) = (view_sq.file(), view_sq.rank());
         let board = self.board_rect_local();
         let x = board.min.x + f as f32 * self.square_size;
         // screen y 向下增长，rank 0 在底部，rank 7 在顶部
@@ -100,14 +98,15 @@ impl BoardLayout {
     }
 
     /// 格子中心在 painter-local 坐标系下的坐标
-    pub fn square_center(&self, sq: Square, flipped: bool) -> Pos2 {
-        self.square_rect(sq, flipped).center()
+    pub fn square_center(&self, view_sq: Square) -> Pos2 {
+        self.square_rect(view_sq).center()
     }
 
-    /// painter-local 坐标 -> 棋盘格子
+    /// painter-local 坐标 -> 视角格
     ///
+    /// 返回的是**视角格**，需经 `Game::view_to_square` 转换回棋盘格
     /// 如果坐标不在棋盘区域内则返回 `None`
-    pub fn pos_to_square(&self, pos: Pos2, flipped: bool) -> Option<Square> {
+    pub fn pos_to_square(&self, pos: Pos2) -> Option<Square> {
         let board = self.board_rect_local();
         if !board.contains(pos) {
             return None;
@@ -117,10 +116,6 @@ impl BoardLayout {
         if f >= 8 || r >= 8 {
             return None;
         }
-        if flipped {
-            Square::from_coord(7 - f, 7 - r)
-        } else {
-            Square::from_coord(f, r)
-        }
+        Square::from_coord(f, r)
     }
 }

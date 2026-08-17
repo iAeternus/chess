@@ -33,9 +33,6 @@ pub struct ChessApp {
     /// 状态
     status_message: String,
 
-    /// 棋盘翻转（黑方视角）
-    flipped: bool,
-
     /// 拖拽：(棋子, 来源格, painter-local 鼠标位置)
     drag: Option<(Piece, Square, Pos2)>,
 
@@ -69,7 +66,6 @@ impl ChessApp {
             engine_info_panel: EngineInfoPanel::new(),
             toolbar: Toolbar::new(),
             status_message: String::from("White to move"),
-            flipped: false,
             drag: None,
             arrows: Vec::new(),
             arrow_preview: None,
@@ -108,6 +104,7 @@ impl ChessApp {
 
         BoardState {
             position: self.controller.current_position().clone(),
+            view_from: self.controller.view_from(),
             selected_square: self.controller.selected_square(),
             legal_moves: self.controller.legal_moves_for_selected(),
             last_move: self.controller.last_move(),
@@ -134,7 +131,7 @@ impl ChessApp {
                 self.controller.go_to_end();
             }
             if i.key_pressed(egui::Key::R) {
-                self.flipped = !self.flipped;
+                self.controller.flip_view();
             }
             if i.key_pressed(egui::Key::N) && self.controller.mode() != GameMode::Replay {
                 self.controller.new_game();
@@ -179,7 +176,7 @@ impl ChessApp {
                 // View
                 ui.menu_button("View", |ui| {
                     if ui.button("Flip Board (R)").clicked() {
-                        self.flipped = !self.flipped;
+                        self.controller.flip_view();
                         ui.close_menu();
                     }
                     ui.menu_button("Theme", |ui| {
@@ -321,7 +318,7 @@ impl ChessApp {
                     .show(ui, self.controller.mode() == GameMode::Replay);
                 for action in actions {
                     match action {
-                        ToolbarAction::FlipBoard => self.flipped = !self.flipped,
+                        ToolbarAction::FlipBoard => self.controller.flip_view(),
                         ToolbarAction::NewGame => self.controller.new_game(),
                         ToolbarAction::OpenPgn => self.open_pgn(),
                         ToolbarAction::SavePgn => self.save_pgn(),
@@ -361,7 +358,6 @@ impl ChessApp {
             let mode = self.controller.mode();
             let board_state = self.build_board_state();
 
-            self.chess_board.set_flipped(self.flipped);
             let response = self.chess_board.show(
                 ui,
                 &board_state,
@@ -450,7 +446,6 @@ impl ChessApp {
             match GameController::from_pgn(&content) {
                 Ok(controller) => {
                     self.controller = controller;
-                    self.flipped = false;
                     self.drag = None;
                     self.pending_promotion = None;
                     self.status_message = format!(

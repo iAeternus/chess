@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::Color;
+
 /// 棋盘格
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Square(u8);
@@ -70,6 +72,21 @@ impl Square {
     /// 列
     pub fn file(&self) -> u8 {
         self.0 % 8
+    }
+
+    /// 180° 旋转镜像：file → 7-file，rank → 7-rank
+    pub fn mirror(self) -> Square {
+        Square(63 - self.0)
+    }
+
+    /// 按视角映射：White 视角原样返回，Black 视角返回镜像
+    ///
+    /// 该映射是自身的逆（involution），棋盘格 → 视角格与视角格 → 棋盘格通用
+    pub fn view(self, view_from: Color) -> Square {
+        match view_from {
+            Color::White => self,
+            Color::Black => self.mirror(),
+        }
     }
 }
 
@@ -224,5 +241,32 @@ mod tests {
         assert_eq!(Square::A1.to_string(), "a1");
         assert_eq!(Square::E4.to_string(), "e4");
         assert_eq!(Square::H8.to_string(), "h8");
+    }
+
+    #[test]
+    fn test_mirror() {
+        assert_eq!(Square::A1.mirror(), Square::H8);
+        assert_eq!(Square::H8.mirror(), Square::A1);
+        assert_eq!(Square::E4.mirror(), Square::D5);
+        assert_eq!(Square::D5.mirror(), Square::E4);
+        assert_eq!(Square::A8.mirror(), Square::H1);
+        assert_eq!(Square::H1.mirror(), Square::A8);
+    }
+
+    #[test]
+    fn test_mirror_round_trip_all_squares() {
+        for sq in (0..64).map(|i| Square::new(i).unwrap()) {
+            assert_eq!(sq.mirror().mirror(), sq);
+        }
+    }
+
+    #[test]
+    fn test_view() {
+        assert_eq!(Square::E4.view(Color::White), Square::E4);
+        assert_eq!(Square::E4.view(Color::Black), Square::D5);
+        // involution：双向映射一致
+        assert_eq!(Square::E4.view(Color::Black).view(Color::Black), Square::E4);
+        assert_eq!(Square::A1.view(Color::Black), Square::H8);
+        assert_eq!(Square::H8.view(Color::Black), Square::A1);
     }
 }

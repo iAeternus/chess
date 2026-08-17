@@ -33,31 +33,30 @@ impl BoardRenderer {
 
     /// 绘制全部棋盘元素。
     ///
-    /// * `painter` — 已通过 `ui.allocate_painter()` 分配的 Painter（原点在 outer_rect.min）
-    /// * `layout` — 由 `BoardLayout::from_allocated_rect()` 构建的布局
-    /// * `state` — 棋盘渲染状态
-    /// * `textures` — 棋子纹理管理器
-    /// * `flipped` — 是否翻转棋盘（黑方视角）
+    /// # 参数
+    /// * `painter`: 已通过 `ui.allocate_painter()` 分配的 Painter（原点在 outer_rect.min）
+    /// * `layout`: 由 `BoardLayout::from_allocated_rect()` 构建的布局（视角格几何）
+    /// * `state`: 棋盘渲染状态（含视角，渲染时据此做棋盘格 ↔ 视角格转换）
+    /// * `textures`: 棋子纹理管理器
     pub fn paint(
         &self,
         painter: &egui::Painter,
         layout: &BoardLayout,
         state: &BoardState,
         textures: &PieceTextureManager,
-        flipped: bool,
     ) {
         BoardBgRenderer::paint(painter, layout, &self.colors);
-        HighlightRenderer::paint(painter, layout, state, &self.colors, flipped);
-        PieceRenderer::paint(painter, layout, state, textures, flipped, &self.colors);
+        HighlightRenderer::paint(painter, layout, state, &self.colors);
+        PieceRenderer::paint(painter, layout, state, textures, &self.colors);
         if !state.arrows.is_empty() {
             ArrowRenderer::paint(
                 painter,
                 layout,
                 &state.arrows,
                 state.arrow_preview.as_ref(),
-                flipped,
+                state.view_from,
             );
         }
-        CoordRenderer::paint(painter, layout, &self.colors, flipped);
+        CoordRenderer::paint(painter, layout, &self.colors, state.view_from);
     }
 }

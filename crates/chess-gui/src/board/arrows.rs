@@ -1,5 +1,6 @@
 //! 箭头渲染：分析模式下的棋盘标注箭头
 
+use chess_core::Color;
 use egui::{Shape, Stroke, Vec2};
 
 use crate::board::layout::BoardLayout;
@@ -14,15 +15,15 @@ impl ArrowRenderer {
         layout: &BoardLayout,
         arrows: &[BoardArrow],
         preview: Option<&BoardArrow>,
-        flipped: bool,
+        view_from: Color,
     ) {
         for arrow in arrows {
-            Self::draw_arrow(painter, layout, arrow, flipped);
+            Self::draw_arrow(painter, layout, arrow, view_from);
         }
 
         // 临时箭头
         if let Some(arrow) = preview {
-            Self::draw_arrow(painter, layout, arrow, flipped);
+            Self::draw_arrow(painter, layout, arrow, view_from);
         }
     }
 
@@ -30,10 +31,10 @@ impl ArrowRenderer {
         painter: &egui::Painter,
         layout: &BoardLayout,
         arrow: &BoardArrow,
-        flipped: bool,
+        view_from: Color,
     ) {
-        let start = layout.square_center(arrow.from, flipped);
-        let end = layout.square_center(arrow.to, flipped);
+        let start = layout.square_center(arrow.from.view(view_from));
+        let end = layout.square_center(arrow.to.view(view_from));
 
         let dir = end - start;
         let len = dir.length();

@@ -204,6 +204,21 @@ impl GameController {
         self.game.side_to_move()
     }
 
+    /// 当前棋盘视角（底部棋子的颜色，来自 `Game`）
+    pub fn view_from(&self) -> Color {
+        self.game.view_from()
+    }
+
+    /// 切换棋盘视角
+    pub fn flip_view(&mut self) {
+        self.game.flip_view();
+    }
+
+    /// 视角格 -> 棋盘格（输入坐标转换，翻转由 core 处理）
+    pub fn view_to_square(&self, view_sq: Square) -> Square {
+        self.game.view_to_square(view_sq)
+    }
+
     /// 导出当前对局为 PGN 字符串
     pub fn export_pgn(&self) -> String {
         self.game.export_pgn()
@@ -323,7 +338,14 @@ impl GameController {
 
     /// 开始新对局（保持当前模式）
     pub fn new_game(&mut self) {
-        self.game = Game::new(); // 完全新的标准对局
+        self.reset_game(); // 完全新的标准对局
+    }
+
+    /// 重建底层 Game 为新的标准对局，保留棋盘视角，并清除选中状态
+    fn reset_game(&mut self) {
+        let view = self.game.view_from();
+        self.game = Game::new();
+        self.game.set_view_from(view);
         self.selected_square = None;
     }
 
@@ -364,20 +386,20 @@ impl GameController {
     /// 设置人类执棋颜色（会重置对局）
     pub fn set_player_color(&mut self, color: Color) {
         self.player_color = color;
-        self.new_game();
+        self.reset_game();
     }
 
     /// 设置 AI 引擎（会重置对局）
     pub fn set_engine(&mut self, engine: Box<dyn ChessEngine>) {
         self.engine = Some(engine);
-        self.new_game();
+        self.reset_game();
     }
 
     /// 切换模式（会重置对局）
     pub fn set_mode(&mut self, mode: GameMode, engine: Option<Box<dyn ChessEngine>>) {
         self.mode = mode;
         self.engine = engine;
-        self.new_game();
+        self.reset_game();
     }
 
     /// 获取游戏模式

@@ -1,7 +1,7 @@
 //! 棋盘渲染状态：封装渲染器所需的全部视觉信息
 
 use arrayvec::ArrayVec;
-use chess_core::{Move, Piece, Position, Square};
+use chess_core::{Color, Move, Piece, Position, Square};
 use egui::Pos2;
 
 /// 棋盘上的箭头（用于分析模式标注）
@@ -16,10 +16,13 @@ pub struct BoardArrow {
 ///
 /// 由 `GameController` 提供数据，`ChessApp` 组装后传给 `BoardRenderer`
 pub struct BoardState {
-    /// 当前局面
+    /// 当前局面（棋盘格坐标）
     pub position: Position,
 
-    /// 选中的格子（高亮显示）
+    /// 棋盘视角：底部棋子的颜色
+    pub view_from: Color,
+
+    /// 选中的格子（棋盘格坐标）
     pub selected_square: Option<Square>,
 
     /// 选中棋子的合法目标走法
@@ -47,6 +50,7 @@ impl BoardState {
     pub fn from_position(position: Position) -> Self {
         Self {
             position,
+            view_from: Color::White,
             selected_square: None,
             legal_moves: ArrayVec::new(),
             last_move: None,

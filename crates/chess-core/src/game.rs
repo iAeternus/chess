@@ -36,6 +36,10 @@ pub struct Game {
 
     /// PGN 头信息，保持插入顺序
     headers: Vec<(String, String)>,
+
+    /// 棋盘视角：底部棋子的颜色（White = 白方在下方，Black = 黑方在下方即翻转）
+    /// 纯显示字段，不影响规则、FEN、PGN 或 Zobrist
+    view_from: Color,
 }
 
 impl Default for Game {
@@ -56,6 +60,7 @@ impl Game {
             cursor: 0,
             san_cache: Vec::new(),
             headers: Vec::new(),
+            view_from: Color::White,
         }
     }
 
@@ -70,6 +75,7 @@ impl Game {
             cursor: 0,
             san_cache: Vec::new(),
             headers: Vec::new(),
+            view_from: Color::White,
         })
     }
 
@@ -85,6 +91,7 @@ impl Game {
             cursor: 0,
             san_cache: Vec::new(),
             headers: parsed.headers,
+            view_from: Color::White,
         };
 
         // 逐着执行，填充 undos 和 san_cache
@@ -269,6 +276,33 @@ impl Game {
         self.position.side_to_move()
     }
 
+    /// 当前棋盘视角（底部棋子的颜色）
+    ///
+    /// `Color::White` = 白方在下方（正常视角），`Color::Black` = 黑方在下方（翻转视角）
+    pub fn view_from(&self) -> Color {
+        self.view_from
+    }
+
+    /// 设置棋盘视角
+    pub fn set_view_from(&mut self, view_from: Color) {
+        self.view_from = view_from;
+    }
+
+    /// 切换棋盘视角
+    pub fn flip_view(&mut self) {
+        self.view_from = self.view_from.flip();
+    }
+
+    /// 棋盘格 → 视角格（渲染用）
+    pub fn square_to_view(&self, sq: Square) -> Square {
+        sq.view(self.view_from)
+    }
+
+    /// 视角格 → 棋盘格（输入用）
+    pub fn view_to_square(&self, sq: Square) -> Square {
+        sq.view(self.view_from)
+    }
+
     /// 获取第 ply 着局面
     pub fn position_at_ply(&self, ply: usize) -> Option<Position> {
         if ply > self.moves.len() {
@@ -294,6 +328,7 @@ impl Game {
             cursor: self.moves.len(),
             san_cache: self.san_cache.clone(),
             headers: self.headers.clone(),
+            view_from: Color::White,
         };
 
         // 重放到末尾
@@ -529,5 +564,62 @@ mod tests {
         let rights = game.position().castling();
         assert!(!rights.contains(CastlingRights::WHITE_KING_SIDE));
         assert!(!rights.contains(CastlingRights::WHITE_QUEEN_SIDE));
+    }
+
+    #[test]
+    fn view_from_defaults_to_white() {
+        assert_eq!(Game::new().view_from(), Color::White);
+        assert_eq!(
+            Game::from_fen("4k3/8/8/8/8/8/8/4K3 w - - 0 1")
+                .unwrap()
+                .view_from(),
+            Color::White
+        );
+        assert_eq!(
+            Game::from_pgn("1. e4 e5").unwrap().view_from(),
+            Color::White
+        );
+    }
+
+    #[test]
+    fn flip_view_toggles() {
+        let mut game = Game::new();
+        assert_eq!(game.view_from(), Color::White);
+        game.flip_view();
+        assert_eq!(game.view_from(), Color::Black);
+        game.flip_view();
+        assert_eq!(game.view_from(), Color::White);
+        game.set_view_from(Color::Black);
+        assert_eq!(game.view_from(), Color::Black);
+    }
+
+    #[test]
+    fn view_square_mapping() {
+        let mut game = Game::new();
+        assert_eq!(game.view_from(), Color::White);
+        assert_eq!(game.square_to_view(Square::E4), Square::E4);
+        assert_eq!(game.view_to_square(Square::A1), Square::A1);
+
+        game.set_view_from(Color::Black);
+        assert_eq!(game.square_to_view(Square::E4), Square::D5);
+        assert_eq!(game.view_to_square(Square::D5), Square::E4);
+        assert_eq!(game.square_to_view(Square::A1), Square::H8);
+
+        // 双向互逆
+        for i in 0..64 {
+            let sq = Square::new(i).unwrap();
+            assert_eq!(game.view_to_square(game.square_to_view(sq)), sq);
+        }
+    }
+
+    #[test]
+    fn view_does_not_affect_rules() {
+        let fen = "4k3/8/8/8/8/8/4r3/4K3 w - - 0 1";
+        let mut game = Game::from_fen(fen).unwrap();
+        let moves_before = game.legal_moves();
+        game.set_view_from(Color::Black);
+        let moves_after = game.legal_moves();
+        assert_eq!(moves_before, moves_after);
+        assert!(!game.export_pgn().contains("Black"));
     }
 }

@@ -15,20 +15,23 @@ pub struct PieceRenderer;
 
 impl PieceRenderer {
     /// 按顺序绘制：静态棋子 -> 拖拽残影 -> 拖拽浮子。
+    ///
+    /// 遍历视角格，经 `Square::view` 反查棋盘格棋子，视角转换全部委托 core
     pub fn paint(
         painter: &egui::Painter,
         layout: &BoardLayout,
         state: &BoardState,
         textures: &PieceTextureManager,
-        flipped: bool,
         colors: &ThemeColors,
     ) {
         let sq_size = layout.square_size;
+        let view_from = state.view_from;
 
         // 静态棋子（所有 64 格，跳过正在拖拽的来源格）
         for rank in 0..8u8 {
             for file in 0..8u8 {
-                let sq = Square::from_coord(file, rank).unwrap();
+                let view_sq = Square::from_coord(file, rank).unwrap();
+                let sq = view_sq.view(view_from);
 
                 // 跳过正在拖拽的棋子（单独绘制浮子）
                 if let Some((_piece, from, _pos)) = &state.drag
@@ -38,7 +41,7 @@ impl PieceRenderer {
                 }
 
                 if let Some(piece) = state.position.piece_at(sq) {
-                    let c = layout.square_center(sq, flipped);
+                    let c = layout.square_center(view_sq);
                     textures.render(painter, piece.color, piece.kind, c, sq_size * PIECE_RATIO);
                 }
             }
@@ -47,7 +50,7 @@ impl PieceRenderer {
         // 拖拽浮子 + 残影
         if let Some((piece, from, mouse_pos)) = &state.drag {
             // 来源格半透明残影（Lichess: opacity 0.3）
-            let sc = layout.square_center(*from, flipped);
+            let sc = layout.square_center(from.view(view_from));
             let ghost_half = sq_size * PIECE_RATIO / 2.0;
             let ghost_rect = Rect::from_min_max(
                 Pos2::new(sc.x - ghost_half, sc.y - ghost_half),

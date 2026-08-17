@@ -16,44 +16,49 @@ impl HighlightRenderer {
         layout: &BoardLayout,
         state: &BoardState,
         colors: &ThemeColors,
-        flipped: bool,
     ) {
         let sq = layout.square_size;
+        let view_from = state.view_from;
 
         // 最后一步走法 from/to 高亮
         if let Some(mv) = state.last_move {
-            for sq_sq in [mv.from(), mv.to()] {
-                let color = if sq_sq == mv.to() {
+            for sq_sq in [mv.from().view(view_from), mv.to().view(view_from)] {
+                let color = if sq_sq == mv.to().view(view_from) {
                     colors.last_move_to
                 } else {
                     colors.last_move_from
                 };
-                let r = layout.square_rect(sq_sq, flipped);
+                let r = layout.square_rect(sq_sq);
                 painter.rect_filled(r, 0.0, color);
             }
         }
 
         // 将军光晕
         if let Some(king_sq) = state.king_in_check {
-            Self::paint_check_glow(painter, layout.square_center(king_sq, flipped), sq, colors);
+            Self::paint_check_glow(
+                painter,
+                layout.square_center(king_sq.view(view_from)),
+                sq,
+                colors,
+            );
         }
 
         // 选中高亮
         if let Some(sq_sel) = state.selected_square {
-            let r = layout.square_rect(sq_sel, flipped);
+            let r = layout.square_rect(sq_sel.view(view_from));
             painter.rect_filled(r, 0.0, colors.selected_highlight);
         }
 
         // 拖拽来源高亮
         if let Some((_piece, from, _pos)) = &state.drag {
-            let r = layout.square_rect(*from, flipped);
+            let r = layout.square_rect(from.view(view_from));
             painter.rect_filled(r, 0.0, colors.drag_source);
         }
 
         // 合法走法提示：圆点（普通走法）/ 圆环（吃子）
         for mv in &state.legal_moves {
             let tgt = mv.to();
-            let c = layout.square_center(tgt, flipped);
+            let c = layout.square_center(tgt.view(view_from));
 
             let is_capture =
                 state.position.piece_at(tgt).is_some() || mv.flag() == MoveFlag::EnPassant;

@@ -42,10 +42,10 @@ pub struct ChessBoardResponse {
 
 /// 棋盘统一组件
 ///
-/// 拥有渲染器、翻转状态。每帧调用 `show()` 完成渲染 + 交互。
+/// 拥有渲染器。每帧调用 `show()` 完成渲染 + 交互。
+/// 翻转视角由 `GameController`（底层 `Game`）持有，本组件只负责渲染与输入适配。
 pub struct ChessBoard {
     renderer: BoardRenderer,
-    flipped: bool,
 
     /// 当前右键拖动中的箭头
     arrow_drag: Option<BoardArrow>,
@@ -56,14 +56,8 @@ impl ChessBoard {
     pub fn new(renderer: BoardRenderer) -> Self {
         Self {
             renderer,
-            flipped: false,
             arrow_drag: None,
         }
-    }
-
-    /// 设置是否翻转（黑方视角）
-    pub fn set_flipped(&mut self, flipped: bool) {
-        self.flipped = flipped;
     }
 
     /// 更新渲染器颜色（主题切换时调用）
@@ -114,8 +108,7 @@ impl ChessBoard {
         let layout = BoardLayout::from_allocated_rect(response.rect);
 
         // 4. 渲染
-        self.renderer
-            .paint(&painter, &layout, state, textures, self.flipped);
+        self.renderer.paint(&painter, &layout, state, textures);
 
         // 5. 交互处理
         let events = Self::handle_interaction(
@@ -125,7 +118,6 @@ impl ChessBoard {
             drag,
             ctx,
             mode,
-            self.flipped,
             &mut self.arrow_drag,
             self.renderer.colors(),
         );
@@ -137,7 +129,21 @@ impl ChessBoard {
         }
     }
 
+    /// painter-local 坐标 -> 棋盘格（视角格经 core 映射回棋盘格）
+    fn pos_to_board(
+        layout: &BoardLayout,
+        controller: &GameController,
+        pos: Pos2,
+    ) -> Option<Square> {
+        layout
+            .pos_to_square(pos)
+            .map(|view_sq| controller.view_to_square(view_sq))
+    }
+
     /// 交互逻辑
+    ///
+    /// 输入坐标先经 `BoardLayout::pos_to_square` 得到视角格，
+    /// 再经 `GameController::view_to_square` 转回棋盘格，翻转逻辑全部委托 core。
     fn handle_interaction(
         response: &egui::Response,
         layout: &BoardLayout,
@@ -145,7 +151,6 @@ impl ChessBoard {
         drag: &mut Option<(Piece, Square, Pos2)>,
         ctx: &egui::Context,
         mode: GameMode,
-        flipped: bool,
         arrow_drag: &mut Option<BoardArrow>,
         colors: &ThemeColors,
     ) -> Vec<BoardEvent> {
@@ -155,7 +160,7 @@ impl ChessBoard {
             // 右键开始
             if response.drag_started_by(PointerButton::Secondary)
                 && let Some(pos) = response.interact_pointer_pos()
-                && let Some(from) = layout.pos_to_square(pos, flipped)
+                && let Some(from) = Self::pos_to_board(layout, controller, pos)
             {
                 *arrow_drag = Some(BoardArrow {
                     from,
@@ -170,7 +175,7 @@ impl ChessBoard {
             if response.dragged_by(PointerButton::Secondary)
                 && let Some(pos) = response.interact_pointer_pos()
                 && let Some(arrow) = arrow_drag
-                && let Some(to) = layout.pos_to_square(pos, flipped)
+                && let Some(to) = Self::pos_to_board(layout, controller, pos)
             {
                 arrow.to = to;
 
@@ -197,7 +202,7 @@ impl ChessBoard {
         // 拖拽开始
         if response.drag_started_by(PointerButton::Primary)
             && let Some(pos) = response.interact_pointer_pos()
-            && let Some(sq) = layout.pos_to_square(pos, flipped)
+            && let Some(sq) = Self::pos_to_board(layout, controller, pos)
         {
             let piece = controller.current_position().piece_at(sq);
             if let Some(p) = piece {
@@ -226,7 +231,7 @@ impl ChessBoard {
         if response.drag_stopped_by(PointerButton::Primary)
             && let Some((_piece, _from, pos)) = drag.take()
         {
-            if let Some(target) = layout.pos_to_square(pos, flipped) {
+            if let Some(target) = Self::pos_to_board(layout, controller, pos) {
                 if let Some(event) = Self::execute_drag_drop(controller, target) {
                     events.push(event);
                 }
@@ -238,7 +243,7 @@ impl ChessBoard {
         // 点击
         if response.clicked_by(PointerButton::Primary)
             && let Some(local) = response.interact_pointer_pos()
-            && let Some(sq) = layout.pos_to_square(local, flipped)
+            && let Some(sq) = Self::pos_to_board(layout, controller, local)
         {
             match controller.select_square(sq) {
                 SelectionResult::MoveMade { mv } => {
