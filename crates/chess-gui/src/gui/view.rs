@@ -1,6 +1,7 @@
 use chess_ai::{ChessEngine, EngineKind};
 use chess_core::{Color, Piece, Square};
-use egui::{Align2, Pos2};
+use egui::{Align2, Pos2, ViewportBuilder};
+use std::sync::mpsc::{Receiver, Sender};
 
 use crate::constants::PROMOTION_PIECES;
 use crate::game::{GameController, GameMode};
@@ -14,7 +15,7 @@ use crate::gui::{
 pub struct ViewEgui {
     controller: GameController,
     chess_board: ChessBoard,
-    piece_textures: PieceTextureManager,
+    piece_textures: Option<PieceTextureManager>,
     theme: AppTheme,
 
     /// 走法列表面板
@@ -40,21 +41,23 @@ pub struct ViewEgui {
 
     /// HumanVsAI: 引擎选择
     selected_engine_kind: EngineKind,
+
+    /// actor mailbox（占位：后续重构为真实消息类型）
+    #[allow(dead_code)] // 占位：actor 重构后使用
+    tx: Sender<()>,
+    rx: Receiver<()>,
 }
 
 impl ViewEgui {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(tx: Sender<()>, rx: Receiver<()>) -> Self {
         let theme = AppTheme::default();
-        theme.apply_egui_theme(&cc.egui_ctx);
-
-        let piece_textures = PieceTextureManager::new(&cc.egui_ctx, 128);
         let controller = GameController::new(); // 默认 HumanVsHuman
 
         let colors = theme.colors();
         Self {
             controller,
             chess_board: ChessBoard::new(BoardRenderer::new(colors)),
-            piece_textures,
+            piece_textures: None,
             theme,
             move_list_panel: MoveListPanel::new(),
             engine_info_panel: EngineInfoPanel::new(),
@@ -65,7 +68,36 @@ impl ViewEgui {
             arrow_preview: None,
             pending_promotion: None,
             selected_engine_kind: EngineKind::Random,
+            tx,
+            rx,
         }
+    }
+
+    /// 在获得 egui Context 后初始化依赖上下文的资源
+    fn init(&mut self, ctx: &egui::Context) {
+        self.theme.apply_egui_theme(ctx);
+        self.piece_textures = Some(PieceTextureManager::new(ctx, 128));
+    }
+
+    /// 以原生窗口方式启动事件循环
+    pub fn run(mut view: Self) -> eframe::Result<()> {
+        let options = eframe::NativeOptions {
+            viewport: ViewportBuilder::default()
+                .with_resizable(false)
+                .with_inner_size([(1920.0 / 4.0) * 3.0, (1080.0 / 4.0) * 3.0])
+                .with_active(false)
+                .with_title("Chess — Professional Analysis Board"),
+            ..Default::default()
+        };
+
+        eframe::run_native(
+            "Chess",
+            options,
+            Box::new(move |cc| {
+                view.init(&cc.egui_ctx);
+                Ok(Box::new(view))
+            }),
+        )
     }
 
     /// 状态同步
@@ -355,7 +387,9 @@ impl ViewEgui {
             let response = self.chess_board.show(
                 ui,
                 &board_state,
-                &self.piece_textures,
+                self.piece_textures
+                    .as_ref()
+                    .expect("ViewEgui::init must be called before show_board"),
                 &mut self.controller,
                 &mut self.drag,
                 ctx,
@@ -514,5 +548,8 @@ impl eframe::App for ViewEgui {
 
         // 7. 引擎自动走棋
         self.handle_engine(ctx);
+
+        // 8. actor mailbox 轮询（占位）
+        self.rx.try_recv().ok();
     }
 }
