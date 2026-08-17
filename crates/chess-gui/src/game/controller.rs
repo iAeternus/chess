@@ -3,7 +3,7 @@
 //! # 设计原则
 //!
 //! - 所有对局状态、历史、导航、SAN、PGN 均存储在 [`chess_core::Game`] 中，Game 是唯一权威数据源
-//! - 本控制器仅负责 GUI 相关的临时状态：棋子选中、对局模式、AI 引擎调度、人类执棋颜色
+//! - 本控制器仅负责 GUI 相关的临时状态：棋子选中、对局模式、人类执棋颜色
 //! - 对局操作（走棋、撤销、前进、后退、导入导出）全部委托给 `Game`，避免重复状态
 //! - 历史导航由 `Game::go_to_ply` 内部基于起始局面重放实现
 //!
@@ -16,7 +16,6 @@
 //! ```
 
 use arrayvec::ArrayVec;
-use chess_ai::ChessEngine;
 use chess_core::{Color, Game, Move, Position, Promotion, Result, Square};
 
 use crate::game::GameMode;
@@ -41,7 +40,6 @@ pub enum SelectionResult {
 /// - 走法执行与历史管理
 /// - 历史导航（前进/后退/跳转）
 /// - 棋子选中与合法走法提示
-/// - AI 引擎集成
 /// - PGN 导入/导出
 pub struct GameController {
     game: Game,
@@ -49,9 +47,6 @@ pub struct GameController {
 
     /// 当前选中的格子
     selected_square: Option<Square>,
-
-    /// AI 引擎（仅在 HumanVsAI 模式下存在）
-    engine: Option<Box<dyn ChessEngine>>,
 
     /// 人类执什么颜色（默认 White，即引擎执黑）
     player_color: Color,
@@ -66,19 +61,6 @@ impl GameController {
             game: Game::new(),
             mode: GameMode::HumanVsHuman,
             selected_square: None,
-            engine: None,
-            player_color: Color::White,
-        }
-    }
-
-    /// 创建带引擎的对局
-    #[allow(dead_code)]
-    pub fn new_with_engine(mode: GameMode, engine: Box<dyn ChessEngine>) -> Self {
-        Self {
-            game: Game::new(),
-            mode,
-            selected_square: None,
-            engine: Some(engine),
             player_color: Color::White,
         }
     }
@@ -90,7 +72,6 @@ impl GameController {
             game,
             mode: GameMode::Replay,
             selected_square: None,
-            engine: None,
             player_color: Color::White,
         })
     }
@@ -255,9 +236,10 @@ impl GameController {
         let side_to_move = position.side_to_move();
         let legal_moves = self.game.legal_moves();
 
-        // 分析模式下可以移动任意一方的棋子；其他模式下只能移动当前方
-        let can_select =
-            self.mode == GameMode::Analysis || piece_at_sq.is_some_and(|p| p.color == side_to_move);
+        // 人类仅在对局轮到自己时才能操作；分析模式下可以移动任意一方
+        let can_select = self.human_can_interact()
+            && (self.mode == GameMode::Analysis
+                || piece_at_sq.is_some_and(|p| p.color == side_to_move));
 
         if let Some(selected) = self.selected_square {
             // 已有选中棋子
@@ -351,27 +333,24 @@ impl GameController {
         self.selected_square = None;
     }
 
-    /// 请求引擎走一步（仅在 HumanVsAI 模式下有效）
-    pub fn request_engine_move(&mut self) -> Option<Move> {
-        if !self.game.is_at_latest() {
-            return None;
-        }
-
-        let pos = self.game.position().clone();
-        let mv = self.engine.as_mut()?.search(&pos)?;
-
-        self.game.play(mv).ok()?;
-        self.clear_selection();
-
-        Some(mv)
-    }
-
     /// 是否轮到引擎走棋
     pub fn is_engine_turn(&self) -> bool {
         self.mode == GameMode::HumanVsAI
-            && self.engine.is_some()
             && self.game.side_to_move() != self.player_color
             && self.game.is_at_latest()
+    }
+
+    /// 当前是否允许人类操作棋盘
+    ///
+    /// - Analysis / HumanVsHuman：始终允许
+    /// - HumanVsAI：仅当轮到人类执棋时允许（引擎思考/走棋时禁止操作）
+    /// - Replay：只读，不允许
+    pub fn human_can_interact(&self) -> bool {
+        match self.mode {
+            GameMode::Analysis | GameMode::HumanVsHuman => true,
+            GameMode::Replay => false,
+            GameMode::HumanVsAI => self.game.side_to_move() == self.player_color,
+        }
     }
 
     /// 获取人类执棋颜色
@@ -385,16 +364,9 @@ impl GameController {
         self.reset_game();
     }
 
-    /// 设置 AI 引擎（会重置对局）
-    pub fn set_engine(&mut self, engine: Box<dyn ChessEngine>) {
-        self.engine = Some(engine);
-        self.reset_game();
-    }
-
     /// 切换模式（会重置对局）
-    pub fn set_mode(&mut self, mode: GameMode, engine: Option<Box<dyn ChessEngine>>) {
+    pub fn set_mode(&mut self, mode: GameMode) {
         self.mode = mode;
-        self.engine = engine;
         self.reset_game();
     }
 

@@ -211,7 +211,8 @@ impl ChessBoard {
             let piece = controller.current_position().piece_at(sq);
             if let Some(p) = piece {
                 let side = controller.current_position().side_to_move();
-                let can_move = mode == GameMode::Analysis || p.color == side;
+                let can_move =
+                    controller.human_can_interact() && (mode == GameMode::Analysis || p.color == side);
 
                 if can_move {
                     let result = controller.select_square(sq);

@@ -1,8 +1,10 @@
-use chess_ai::{ChessEngine, EngineKind};
-use chess_core::{Color, Piece, Square};
-use egui::{Align2, Pos2, ViewportBuilder};
-use std::sync::mpsc::{Receiver, Sender};
+use std::time::Duration;
 
+use chess_ai::{EngineCommand, EngineKind, EngineResponse};
+use chess_core::{Color, Piece, Position, Square};
+use egui::{Align2, Pos2, ViewportBuilder};
+
+use crate::app::{AppRequest, AppResponse};
 use crate::constants::PROMOTION_PIECES;
 use crate::game::{GameController, GameMode};
 use crate::gui::{
@@ -42,14 +44,18 @@ pub struct ViewEgui {
     /// HumanVsAI: 引擎选择
     selected_engine_kind: EngineKind,
 
-    /// actor mailbox（占位：后续重构为真实消息类型）
-    #[allow(dead_code)] // 占位：actor 重构后使用
-    tx: Sender<()>,
-    rx: Receiver<()>,
+    /// 引擎搜索请求对应的局面（用于丢弃过期结果）
+    requested_position: Option<Position>,
+
+    app_rx: flume::Receiver<AppResponse>,
+    app_tx: flume::Sender<AppRequest>,
 }
 
 impl ViewEgui {
-    pub fn new(tx: Sender<()>, rx: Receiver<()>) -> Self {
+    pub fn new(
+        app_response_rx: flume::Receiver<AppResponse>,
+        app_request_tx: flume::Sender<AppRequest>,
+    ) -> Self {
         let theme = AppTheme::default();
         let controller = GameController::new(); // 默认 HumanVsHuman
 
@@ -68,8 +74,9 @@ impl ViewEgui {
             arrow_preview: None,
             pending_promotion: None,
             selected_engine_kind: EngineKind::Random,
-            tx,
-            rx,
+            requested_position: None,
+            app_rx: app_response_rx,
+            app_tx: app_request_tx,
         }
     }
 
@@ -195,6 +202,9 @@ impl ViewEgui {
                     }
                     ui.separator();
                     if ui.button("Quit").clicked() {
+                        let _ = self
+                            .app_tx
+                            .send(AppRequest::Engine(EngineCommand::Terminate));
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 });
@@ -226,20 +236,24 @@ impl ViewEgui {
                 // Mode
                 ui.menu_button("Mode", |ui| {
                     if ui.button("Human vs Human").clicked() {
-                        self.controller.set_mode(GameMode::HumanVsHuman, None);
+                        self.controller.set_mode(GameMode::HumanVsHuman);
                         self.drag = None;
                         self.pending_promotion = None;
                         ui.close_menu();
                     }
                     if ui.button("Human vs AI").clicked() {
-                        let engine = self.create_engine();
-                        self.controller.set_mode(GameMode::HumanVsAI, Some(engine));
+                        self.controller.set_mode(GameMode::HumanVsAI);
+                        let _ = self
+                            .app_tx
+                            .send(AppRequest::Engine(EngineCommand::ChangeEngine(
+                                self.selected_engine_kind,
+                            )));
                         self.drag = None;
                         self.pending_promotion = None;
                         ui.close_menu();
                     }
                     if ui.button("Analysis").clicked() {
-                        self.controller.set_mode(GameMode::Analysis, None);
+                        self.controller.set_mode(GameMode::Analysis);
                         self.drag = None;
                         self.pending_promotion = None;
                         ui.close_menu();
@@ -316,8 +330,12 @@ impl ViewEgui {
                                 }
                             });
                         if changed {
-                            let engine = self.create_engine();
-                            self.controller.set_engine(engine);
+                            let _ =
+                                self.app_tx
+                                    .send(AppRequest::Engine(EngineCommand::ChangeEngine(
+                                        self.selected_engine_kind,
+                                    )));
+                            self.controller.new_game();
                         }
                     });
 
@@ -511,14 +529,49 @@ impl ViewEgui {
         }
     }
 
-    /// 根据当前选中的引擎索引创建对应的引擎实例
-    fn create_engine(&self) -> Box<dyn ChessEngine> {
-        self.selected_engine_kind.create()
+    /// 处理引擎搜索
+    fn handle_engine(&mut self, ctx: &egui::Context) {
+        if self.controller.is_engine_turn() {
+            if self.requested_position.is_none() {
+                let position = self.controller.current_position().clone();
+                self.requested_position = Some(position.clone());
+                let _ = self
+                    .app_tx
+                    .send(AppRequest::Engine(EngineCommand::Search(position)));
+            }
+            // 搜索进行时持续重绘，以便及时收到引擎响应
+            ctx.request_repaint_after(Duration::from_millis(100));
+        }
     }
 
-    fn handle_engine(&mut self, ctx: &egui::Context) {
-        if self.controller.is_engine_turn() && self.controller.request_engine_move().is_some() {
-            ctx.request_repaint(); // 引擎走了一步，请求重绘
+    /// 轮询 App 响应通道，处理引擎搜索结果
+    fn poll_app_events(&mut self, ctx: &egui::Context) {
+        while let Ok(response) = self.app_rx.try_recv() {
+            match response {
+                AppResponse::Engine(EngineResponse::SearchComplete(mv)) => {
+                    // 丢弃过期结果：请求搜索后的局面与当前局面不一致
+                    let stale = self.requested_position.take().as_ref()
+                        != Some(self.controller.current_position());
+                    if stale {
+                        continue;
+                    }
+                    if let Some(mv) = mv {
+                        self.controller.make_move(mv);
+                        let san = self
+                            .controller
+                            .san_list()
+                            .last()
+                            .cloned()
+                            .unwrap_or_default();
+                        self.status_message = format!("Engine played {san}");
+                    } else {
+                        self.status_message = String::from("Engine: no legal moves");
+                    }
+                    ctx.request_repaint();
+                }
+                AppResponse::Engine(EngineResponse::EngineChanged(_)) => {}
+                AppResponse::Engine(EngineResponse::Terminated) => {}
+            }
         }
     }
 }
@@ -546,10 +599,10 @@ impl eframe::App for ViewEgui {
             ui.label(self.status_message.clone());
         });
 
-        // 7. 引擎自动走棋
-        self.handle_engine(ctx);
+        // 7. actor mailbox 轮询
+        self.poll_app_events(ctx);
 
-        // 8. actor mailbox 轮询（占位）
-        self.rx.try_recv().ok();
+        // 8. 引擎自动走棋
+        self.handle_engine(ctx);
     }
 }

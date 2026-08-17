@@ -14,3 +14,5 @@ resvg = "0.44"
 usvg = "0.44"
 rfd = "0.15"
 arrayvec = "0.7.8"
+tokio = { version = "1.53.1", features = ["sync", "rt-multi-thread", "macros"] }
+flume = "0.12.0"
