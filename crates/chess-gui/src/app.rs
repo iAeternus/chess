@@ -1,23 +1,17 @@
-//! ChessApp — 应用主结构体
-//!
-//! 负责协调各个子系统：GameController、BoardRenderer、面板、纹理、交互
-
 use chess_ai::{ChessEngine, EngineKind};
 use chess_core::{Color, Piece, Square};
 use egui::{Align2, Pos2};
 
-use crate::board::chess_board::{BoardEvent, ChessBoard};
-use crate::board::renderer::BoardRenderer;
-use crate::board::state::{BoardArrow, BoardState};
+use crate::board::{BoardArrow, BoardEvent, BoardRenderer, BoardState, ChessBoard};
 use crate::constants::PROMOTION_PIECES;
 use crate::game::{GameController, GameMode};
-use crate::panel::engine_info::{EngineInfo, EngineInfoPanel};
-use crate::panel::move_list::{MoveListAction, MoveListPanel};
-use crate::panel::toolbar::{Toolbar, ToolbarAction};
+use crate::panel::{
+    EngineInfo, EngineInfoPanel, MoveListAction, MoveListPanel, Toolbar, ToolbarAction,
+};
 use crate::piece::texture::PieceTextureManager;
 use crate::theme::AppTheme;
 
-pub struct ChessApp {
+pub struct ViewEgui {
     controller: GameController,
     chess_board: ChessBoard,
     piece_textures: PieceTextureManager,
@@ -48,7 +42,7 @@ pub struct ChessApp {
     selected_engine_kind: EngineKind,
 }
 
-impl ChessApp {
+impl ViewEgui {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let theme = AppTheme::default();
         theme.apply_egui_theme(&cc.egui_ctx);
@@ -495,7 +489,7 @@ impl ChessApp {
     }
 }
 
-impl eframe::App for ChessApp {
+impl eframe::App for ViewEgui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // 1. 键盘
         self.handle_keyboard(ctx);

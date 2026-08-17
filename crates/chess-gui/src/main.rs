@@ -8,7 +8,7 @@ mod panel;
 mod piece;
 mod theme;
 
-use app::ChessApp;
+use app::ViewEgui;
 
 fn main() -> eframe::Result<()> {
     eframe::run_native(
@@ -20,6 +20,6 @@ fn main() -> eframe::Result<()> {
                 .with_title("Chess — Professional Analysis Board"),
             ..Default::default()
         },
-        Box::new(|cc| Ok(Box::new(ChessApp::new(cc)))),
+        Box::new(|cc| Ok(Box::new(ViewEgui::new(cc)))),
     )
 }

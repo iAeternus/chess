@@ -1,9 +1,13 @@
-pub(crate) mod arrows;
-pub(crate) mod bg;
-pub mod chess_board;
-pub(crate) mod coords;
-pub(crate) mod highlight;
-pub mod layout;
-pub(crate) mod pieces;
-pub mod renderer;
-pub mod state;
+mod arrows;
+mod bg;
+mod chess_board;
+mod coords;
+mod highlight;
+mod layout;
+mod pieces;
+mod renderer;
+mod state;
+
+pub use chess_board::{BoardEvent, ChessBoard};
+pub use renderer::BoardRenderer;
+pub use state::{BoardArrow, BoardState};
