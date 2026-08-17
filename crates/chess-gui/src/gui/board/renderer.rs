@@ -3,15 +3,15 @@
 //! 不再直接处理布局计算、坐标转换或具体绘制逻辑，
 //! 仅负责按正确顺序调用各子渲染器
 
-use crate::board::arrows::ArrowRenderer;
-use crate::board::bg::BoardBgRenderer;
-use crate::board::coords::CoordRenderer;
-use crate::board::highlight::HighlightRenderer;
-use crate::board::layout::BoardLayout;
-use crate::board::pieces::PieceRenderer;
-use crate::board::state::BoardState;
-use crate::piece::texture::PieceTextureManager;
-use crate::theme::ThemeColors;
+use crate::gui::{
+    board::{
+        arrows::ArrowRenderer, bg::BoardBgRenderer, coords::CoordRenderer,
+        highlight::HighlightRenderer, layout::BoardLayout, pieces::PieceRenderer,
+        state::BoardState,
+    },
+    piece::texture::PieceTextureManager,
+    theme::ThemeColors,
+};
 
 pub struct BoardRenderer {
     colors: ThemeColors,

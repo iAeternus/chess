@@ -1,6 +1,6 @@
-//! 引擎信息面板：显示引擎名称、深度、评估、最佳走法。
+//! 引擎信息面板：显示引擎名称、深度、评估、最佳走法
 
-use crate::theme::ThemeColors;
+use crate::gui::theme::ThemeColors;
 
 /// 引擎分析信息
 #[derive(Debug, Clone, Default)]

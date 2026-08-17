@@ -3,8 +3,8 @@
 use chess_core::Color;
 use egui::{Shape, Stroke, Vec2};
 
-use crate::board::layout::BoardLayout;
-use crate::board::state::BoardArrow;
+use crate::gui::board::layout::BoardLayout;
+use crate::gui::board::state::BoardArrow;
 
 pub struct ArrowRenderer;
 

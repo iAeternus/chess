@@ -3,8 +3,7 @@
 use chess_core::{Color, Square};
 use egui::{Align2, FontId, Pos2};
 
-use crate::board::layout::BoardLayout;
-use crate::theme::ThemeColors;
+use crate::gui::{board::layout::BoardLayout, theme::ThemeColors};
 
 pub struct CoordRenderer;
 

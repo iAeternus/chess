@@ -1,4 +1,4 @@
-//! 工具栏：单行布局（Flip / New / Open / Save）。
+//! 工具栏：单行布局（Flip / New / Open / Save）
 
 /// 工具栏操作
 pub enum ToolbarAction {

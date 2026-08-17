@@ -23,62 +23,62 @@ impl PieceTextureManager {
             (
                 Color::White,
                 PieceKind::King,
-                include_bytes!("../../assets/w_king.svg"),
+                include_bytes!("../../../assets/w_king.svg"),
             ),
             (
                 Color::White,
                 PieceKind::Queen,
-                include_bytes!("../../assets/w_queen.svg"),
+                include_bytes!("../../../assets/w_queen.svg"),
             ),
             (
                 Color::White,
                 PieceKind::Rook,
-                include_bytes!("../../assets/w_rook.svg"),
+                include_bytes!("../../../assets/w_rook.svg"),
             ),
             (
                 Color::White,
                 PieceKind::Bishop,
-                include_bytes!("../../assets/w_bishop.svg"),
+                include_bytes!("../../../assets/w_bishop.svg"),
             ),
             (
                 Color::White,
                 PieceKind::Knight,
-                include_bytes!("../../assets/w_knight.svg"),
+                include_bytes!("../../../assets/w_knight.svg"),
             ),
             (
                 Color::White,
                 PieceKind::Pawn,
-                include_bytes!("../../assets/w_pawn.svg"),
+                include_bytes!("../../../assets/w_pawn.svg"),
             ),
             (
                 Color::Black,
                 PieceKind::King,
-                include_bytes!("../../assets/king.svg"),
+                include_bytes!("../../../assets/king.svg"),
             ),
             (
                 Color::Black,
                 PieceKind::Queen,
-                include_bytes!("../../assets/queen.svg"),
+                include_bytes!("../../../assets/queen.svg"),
             ),
             (
                 Color::Black,
                 PieceKind::Rook,
-                include_bytes!("../../assets/rook.svg"),
+                include_bytes!("../../../assets/rook.svg"),
             ),
             (
                 Color::Black,
                 PieceKind::Bishop,
-                include_bytes!("../../assets/bishop.svg"),
+                include_bytes!("../../../assets/bishop.svg"),
             ),
             (
                 Color::Black,
                 PieceKind::Knight,
-                include_bytes!("../../assets/knight.svg"),
+                include_bytes!("../../../assets/knight.svg"),
             ),
             (
                 Color::Black,
                 PieceKind::Pawn,
-                include_bytes!("../../assets/pawn.svg"),
+                include_bytes!("../../../assets/pawn.svg"),
             ),
         ];
 

@@ -3,8 +3,7 @@
 use chess_core::Square;
 use egui::{CornerRadius, Pos2, Rect, Stroke, StrokeKind};
 
-use crate::board::layout::BoardLayout;
-use crate::theme::ThemeColors;
+use crate::gui::{board::layout::BoardLayout, theme::ThemeColors};
 
 /// 圆角半径占格子的比例
 const ROUNDING_RATIO: f32 = 0.06;

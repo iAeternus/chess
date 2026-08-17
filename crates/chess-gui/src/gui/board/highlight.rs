@@ -2,9 +2,10 @@
 
 use egui::{Mesh, Stroke, epaint};
 
-use crate::board::layout::BoardLayout;
-use crate::board::state::BoardState;
-use crate::theme::ThemeColors;
+use crate::gui::{
+    board::{layout::BoardLayout, state::BoardState},
+    theme::ThemeColors,
+};
 
 pub struct HighlightRenderer;
 

@@ -6,12 +6,16 @@
 use chess_core::{Move, Piece, Square};
 use egui::{PointerButton, Pos2, Sense, Vec2};
 
-use crate::board::layout::BoardLayout;
-use crate::board::renderer::BoardRenderer;
-use crate::board::state::{BoardArrow, BoardState};
 use crate::game::{GameController, GameMode, SelectionResult};
-use crate::piece::texture::PieceTextureManager;
-use crate::theme::ThemeColors;
+use crate::gui::theme::ThemeColors;
+use crate::gui::{
+    board::{
+        layout::BoardLayout,
+        renderer::BoardRenderer,
+        state::{BoardArrow, BoardState},
+    },
+    piece::texture::PieceTextureManager,
+};
 
 /// 棋盘交互事件
 #[derive(Debug)]

@@ -3,10 +3,11 @@
 use chess_core::Square;
 use egui::{Pos2, Rect};
 
-use crate::board::layout::BoardLayout;
-use crate::board::state::BoardState;
-use crate::piece::texture::PieceTextureManager;
-use crate::theme::ThemeColors;
+use crate::gui::{
+    board::{layout::BoardLayout, state::BoardState},
+    piece::texture::PieceTextureManager,
+    theme::ThemeColors,
+};
 
 /// 棋子占格子的比例
 const PIECE_RATIO: f32 = 0.90;

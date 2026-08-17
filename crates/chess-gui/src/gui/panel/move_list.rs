@@ -4,8 +4,7 @@ use chess_core::{Color, Move, PieceKind};
 use egui::{ScrollArea, Sense};
 use egui_extras::{Column, TableBuilder};
 
-use crate::constants::PIECE_ICONS;
-use crate::theme::ThemeColors;
+use crate::{constants::PIECE_ICONS, gui::theme::ThemeColors};
 
 /// 走法列表操作
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

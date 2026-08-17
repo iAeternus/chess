@@ -1,14 +1,9 @@
-//! Chess GUI — Lichess 风格专业国际象棋桌面软件。
-
 mod app;
-mod board;
 mod constants;
 mod game;
-mod panel;
-mod piece;
-mod theme;
+mod gui;
 
-use app::ViewEgui;
+use crate::gui::view::ViewEgui;
 
 fn main() -> eframe::Result<()> {
     eframe::run_native(
