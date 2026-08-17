@@ -102,10 +102,16 @@ impl GameController {
 
     /// 获取当前选中棋子可以走到的合法目标走法
     pub fn legal_moves_for_selected(&self) -> ArrayVec<Move, 256> {
-        match self.selected_square {
-            Some(sq) => self.game.legal_moves_from(sq),
-            None => ArrayVec::new(),
-        }
+        self.selected_square
+            .map(|sq| self.game.legal_moves_from(sq))
+            .unwrap_or_default()
+    }
+
+    /// 从当前选中棋子到目标格的所有合法走法
+    pub fn legal_moves_to(&self, to: Square) -> ArrayVec<Move, 256> {
+        self.selected_square
+            .map(|from| self.game.legal_moves_between(from, to))
+            .unwrap_or_default()
     }
 
     /// 最后一步走法（用于高亮显示）
@@ -265,12 +271,7 @@ impl GameController {
             }
 
             // 检查是否点击了合法目标
-            let matching: ArrayVec<Move, 256> = legal_moves
-                .iter()
-                .filter(|m| m.from() == selected && m.to() == sq)
-                .copied()
-                .collect();
-
+            let matching = self.game.legal_moves_between(selected, sq);
             if matching.is_empty() {
                 self.clear_selection();
                 return SelectionResult::Cleared;
@@ -316,12 +317,7 @@ impl GameController {
         to: Square,
         promotion: Promotion,
     ) -> SelectionResult {
-        let mv = self
-            .game
-            .legal_moves()
-            .into_iter()
-            .find(|m| m.from() == from && m.to() == to && m.promotion() == Some(promotion));
-
+        let mv = self.game.find_legal_move(from, to, Some(promotion));
         if let Some(mv) = mv {
             self.make_move(mv);
             SelectionResult::MoveMade { mv }

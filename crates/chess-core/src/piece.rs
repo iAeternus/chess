@@ -31,6 +31,18 @@ impl PieceKind {
         PieceKind::Queen,
         PieceKind::King,
     ];
+
+    /// 从 SAN 棋子字母解析类型（'K','Q','R','B','N'）；兵（无字母）返回 None。
+    pub fn from_san_char(c: char) -> Option<Self> {
+        match c {
+            'K' => Some(Self::King),
+            'Q' => Some(Self::Queen),
+            'R' => Some(Self::Rook),
+            'B' => Some(Self::Bishop),
+            'N' => Some(Self::Knight),
+            _ => None,
+        }
+    }
 }
 
 impl From<PieceKind> for usize {
@@ -113,5 +125,26 @@ mod tests {
             let piece = Piece::new(color, kind);
             assert_eq!(piece.to_char(), expected);
         }
+    }
+
+    #[test]
+    fn test_from_san_char() {
+        let cases = [
+            ('K', PieceKind::King),
+            ('Q', PieceKind::Queen),
+            ('R', PieceKind::Rook),
+            ('B', PieceKind::Bishop),
+            ('N', PieceKind::Knight),
+        ];
+
+        for (c, expected) in cases {
+            assert_eq!(PieceKind::from_san_char(c), Some(expected), "char '{c}'");
+        }
+
+        // 兵没有 SAN 字母，非棋子字母返回 None
+        assert_eq!(PieceKind::from_san_char('e'), None);
+        assert_eq!(PieceKind::from_san_char('x'), None);
+        assert_eq!(PieceKind::from_san_char('p'), None);
+        assert_eq!(PieceKind::from_san_char('P'), None);
     }
 }

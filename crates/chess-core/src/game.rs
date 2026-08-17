@@ -9,7 +9,7 @@ use std::{fmt::Display, str::FromStr};
 use arrayvec::ArrayVec;
 
 use crate::{
-    ChessError, Color, Move, Position, Result, Square,
+    ChessError, Color, Move, Position, Promotion, Result, Square,
     makemove::{Undo, make_move},
     movegen,
     pgn::{move_to_san, parse_pgn, write_pgn},
@@ -233,6 +233,26 @@ impl Game {
             .collect()
     }
 
+    /// 获取从 from 出发到 to 的所有合法走法（升变时含多个变体）
+    pub fn legal_moves_between(&self, from: Square, to: Square) -> ArrayVec<Move, 256> {
+        self.legal_moves()
+            .into_iter()
+            .filter(|m| m.from() == from && m.to() == to)
+            .collect()
+    }
+
+    /// 查找 from→to 且升变类型匹配的唯一合法走法
+    pub fn find_legal_move(
+        &self,
+        from: Square,
+        to: Square,
+        promotion: Option<Promotion>,
+    ) -> Option<Move> {
+        self.legal_moves_between(from, to)
+            .into_iter()
+            .find(|m| m.promotion() == promotion)
+    }
+
     /// 获取上一步走法
     pub fn last_move(&self) -> Option<Move> {
         self.cursor
@@ -423,7 +443,7 @@ impl FromStr for Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CastlingRights, MoveFlag, Promotion, Square};
+    use crate::{CastlingRights, Move, MoveFlag, Promotion, Square};
 
     #[test]
     fn initial_position_20_moves() {
@@ -564,6 +584,65 @@ mod tests {
         let rights = game.position().castling();
         assert!(!rights.contains(CastlingRights::WHITE_KING_SIDE));
         assert!(!rights.contains(CastlingRights::WHITE_QUEEN_SIDE));
+    }
+
+    #[test]
+    fn legal_moves_between_basic() {
+        let game = Game::new();
+
+        // e2-e4（双步兵）在初始局面中合法
+        let pushes = game.legal_moves_between(Square::E2, Square::E4);
+        assert_eq!(pushes.len(), 1);
+        assert_eq!(pushes[0].flag(), MoveFlag::DoublePawnPush);
+
+        // 目标格超出兵的可达范围 -> 空
+        assert!(game.legal_moves_between(Square::E2, Square::E5).is_empty());
+        // 起始格无棋子 -> 空
+        assert!(game.legal_moves_between(Square::D4, Square::D5).is_empty());
+    }
+
+    #[test]
+    fn legal_moves_between_promotion_variants() {
+        // 白兵 a7 即将升变，黑王不在 a8/e8
+        let game = Game::from_fen("6k1/P7/8/8/8/8/8/7K w - - 0 1").unwrap();
+
+        let promotions = game.legal_moves_between(Square::A7, Square::A8);
+        assert_eq!(promotions.len(), 4);
+
+        let kinds: Vec<Promotion> = promotions.iter().filter_map(|m| m.promotion()).collect();
+        assert!(kinds.contains(&Promotion::Queen));
+        assert!(kinds.contains(&Promotion::Rook));
+        assert!(kinds.contains(&Promotion::Bishop));
+        assert!(kinds.contains(&Promotion::Knight));
+    }
+
+    #[test]
+    fn find_legal_move_promotion() {
+        let game = Game::from_fen("6k1/P7/8/8/8/8/8/7K w - - 0 1").unwrap();
+
+        let mv = game.find_legal_move(Square::A7, Square::A8, Some(Promotion::Queen));
+        assert!(mv.is_some());
+        assert_eq!(mv.unwrap().promotion(), Some(Promotion::Queen));
+
+        // 无升变的普通走法在升变格上找不到
+        assert_eq!(game.find_legal_move(Square::A7, Square::A8, None), None);
+    }
+
+    #[test]
+    fn find_legal_move_quiet() {
+        let game = Game::new();
+
+        let mv = game.find_legal_move(Square::E2, Square::E4, None);
+        assert_eq!(
+            mv,
+            Some(Move::new(Square::E2, Square::E4, MoveFlag::DoublePawnPush,))
+        );
+
+        // 带升变类型查询普通走法 -> None
+        assert_eq!(
+            game.find_legal_move(Square::E2, Square::E4, Some(Promotion::Queen)),
+            None
+        );
     }
 
     #[test]

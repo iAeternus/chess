@@ -1,6 +1,5 @@
 //! 高亮渲染：最后一步、将军光晕、选中、拖拽来源、合法走法提示
 
-use chess_core::MoveFlag;
 use egui::{Mesh, Stroke, epaint};
 
 use crate::board::layout::BoardLayout;
@@ -60,10 +59,7 @@ impl HighlightRenderer {
             let tgt = mv.to();
             let c = layout.square_center(tgt.view(view_from));
 
-            let is_capture =
-                state.position.piece_at(tgt).is_some() || mv.flag() == MoveFlag::EnPassant;
-
-            if is_capture {
+            if mv.is_capture() {
                 // 空心圆环
                 painter.circle_stroke(c, sq * 0.42, Stroke::new(sq * 0.06, colors.capture_ring));
             } else {

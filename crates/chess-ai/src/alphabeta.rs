@@ -1,4 +1,4 @@
-use std::{cmp};
+use std::cmp;
 
 use chess_core::{Color, Move, Position, generate_legal, make_move, unmake_move};
 

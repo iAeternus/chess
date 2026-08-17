@@ -261,13 +261,7 @@ impl ChessBoard {
 
     /// 执行拖拽释放：检查目标格子是否有合法走法，处理升变判断
     fn execute_drag_drop(controller: &mut GameController, target: Square) -> Option<BoardEvent> {
-        let legal_moves = controller.legal_moves_for_selected();
-        let matching: Vec<_> = legal_moves
-            .iter()
-            .filter(|m| m.to() == target)
-            .copied()
-            .collect();
-
+        let matching = controller.legal_moves_to(target);
         if matching.is_empty() {
             controller.clear_selection();
             return None;

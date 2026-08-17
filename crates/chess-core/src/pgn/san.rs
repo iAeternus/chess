@@ -308,14 +308,7 @@ fn rank_char(rank: u8) -> char {
 }
 
 fn piece_kind_from_char(c: char) -> Option<PieceKind> {
-    match c {
-        'K' => Some(PieceKind::King),
-        'Q' => Some(PieceKind::Queen),
-        'R' => Some(PieceKind::Rook),
-        'B' => Some(PieceKind::Bishop),
-        'N' => Some(PieceKind::Knight),
-        _ => None,
-    }
+    PieceKind::from_san_char(c)
 }
 
 fn piece_kind_to_char(kind: PieceKind) -> char {

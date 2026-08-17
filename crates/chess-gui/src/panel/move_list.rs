@@ -1,4 +1,4 @@
-//! 走法列表面板：顶部导航按钮 + SAN 格式走法表格。
+//! 走法列表面板：顶部导航按钮 + SAN 格式走法表格
 
 use chess_core::{Color, Move, PieceKind};
 use egui::{ScrollArea, Sense};
@@ -213,15 +213,9 @@ fn san_with_icon(san: &str, color: Color) -> String {
         return String::new();
     };
 
-    let kind = match first {
-        'K' => PieceKind::King,
-        'Q' => PieceKind::Queen,
-        'R' => PieceKind::Rook,
-        'B' => PieceKind::Bishop,
-        'N' => PieceKind::Knight,
-
+    let Some(kind) = PieceKind::from_san_char(first) else {
         // 兵没有 SAN 字母
-        _ => return san.to_string(),
+        return san.to_string();
     };
 
     let icon = PIECE_ICONS
